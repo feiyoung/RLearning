@@ -1,0 +1,36 @@
+1. 参照http://www.360doc.com/content/16/0608/21/3852985_566141610.shtml安装Rtools设置好环境变量。
+
+2. 编写包
+# 在R中或Rstuio中运行以下代码
+setwd('D:\\学习\\R语言代码')
+getwd()
+rm(list=ls())
+#
+MonteCarloPi <- function(nsim){
+  x <- 2*runif(nsim)-1
+  y <- 2*runif(nsim)-1
+  inx <- which((x^2+y^2)<=1)
+  return ((length(inx)/nsim)*4)
+}
+f1 <- function(aa) {return(aa)}
+f2 <- function(aa) {return(aa+2)}
+d1 <- matrix(1:6, 2, 3)
+package.skeleton(name='test1', list=c('MonteCarloPi','f1','f2', 'd1'))
+
+# 运行完语句之后，你会发现D:\\学习\\R语言代码中新建了文件夹test1，里面含有
+# data, man 和R三个子文件夹和DESCRIPTION，Read-and-delete-me文件，可以通过
+记事本打开，并编辑。其中data文件夹保存数据（本例中d1），R文件夹保存函数(如
+本例中三个函数)。man文件夹用于存放.Rd文件，用于生成帮助文件，我们只需修改每个
+.Rd文件就行，用记事本打开，并定位到'title'开头的一行，写入该函数或者数据的名称即可，保存关闭。
+其实按照标准的做法，下面的description和examples之类的都要补全，但是只有title是必须补全的，
+否则在用> R CMD build test1.编译时会报错。
+
+3. 编译包
+打开window的dos窗口，并到达路径D:\\学习\\R语言代码
+>cd d:\学习\R语言代码
+>R CMD build test1 
+以上命令执行的前提是Rtools和R都已添加到系统路径中
+> path # 查看已添加的系统路径
+运行完成后就会生成压缩包test1_1.0.tar.gz
+
+4. 可以

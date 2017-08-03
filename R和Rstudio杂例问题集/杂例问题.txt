@@ -1,0 +1,40 @@
+1. 如何在Rstudio中设置默认工作路径？避免每次都需要重新设置工作路径。
+ 首先：Rsudio的菜单栏 -> Tools -> Global Options... -> 修改默认工作路径即可。
+
+2. 如何在R中设置默认工作路径？对于直接使用R编程者适用。
+ 首先：选中安装R后的桌面图标 -> 属性 -> 修改起始位置即可， 另外还可以为R设置快捷键。
+
+3. 如何更新R的旧版本？
+法一：利用函数updateR()， 即在命令窗口中输入：
+> updateR()
+法二：为了保证你不重新下载原来已经下载的R封装包，首先需要在不卸载R的情况下，去R官网下载对应新版本的安装包，然后进行安装，
+再将旧版本安装路径中的library文件夹中的全部文件夹拷贝到新版本R的安装路径中的library文件夹中。最后打开新版本R，输入代码：
+> update.packages() 
+
+
+4. 当下载封装包时，报错说无该版本的R包，怎么办？
+首先：进入R官网下载包的网页页面，进行查找。找到后，下载.zip压缩包，有些可以直接解压到R的library文件夹即可使用，但是有些需要用
+ Rgui.exe的从本地zip压缩文件中安装R包的方式。
+
+5. 当你重新安装R后，如何使Rsudio识别到你的新版本的R呢？
+首先：删除老版本的R，然后打开Rstudio，在选择R的安装路径即可。
+
+6. 怎样从github上下载R包?
+首先：要联网，下载Rtools软件，这个在R官网上就能下载到。然后需要在R上装载devtools包，
+install.packages('devtools') # 即可下载
+该包中的: install_github('usernames/packagename'),其中usernames是指该包的作者名字，
+直接在github网站上就能搜出该包并看到该包作者的名字，于是很轻松就能装载了。但是要注意一个问题：就在如果在RStudio中执行
+该命令报错，那么就在在Rgui.exe中运行代码。
+比如：
+我们下载 作者为：wch的ggplot2包， 只需输入：
+libray(devtools)
+install_github('wch/ggplot2') # 就会自动从github网站上下载这个包，
+                               #接下来你试试手吧
+install_github('jkrijthe/RSSL')
+
+7. 怎样更新到R最新版本
+首先：要联网，在Rgui.exe里面运行，不要在Rstudio.exe里面运行如下代码：
+install.packages('installr')
+library(installr)
+updateR() # 
+最后根据对话框提示，完成更新
