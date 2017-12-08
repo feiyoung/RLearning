@@ -1,0 +1,38 @@
+#-------------------------------案例1： 分类问题寻找最佳参数组合  
+  data(iris)
+  ## tune `svm' for classification with RBF-kernel (default in svm),
+  ## using one split for training/validation set
+  
+  obj <- tune(svm, Species~., data = iris, 
+              ranges = list(gamma = 2^(-1:1), cost = 2^(2:4)),
+              tunecontrol = tune.control(sampling = "fix") # 抽样方法使用固定的训练和交叉验证集
+             )
+
+  ## alternatively: 等价于
+  obj <- tune.svm(Species~., data = iris, gamma = 2^(-1:1), cost = 2^(2:4))
+  obj$best.parameters # 查看最佳参数组合
+  obj$best.performance # 查看最佳性能
+  summary(obj) # 汇总,查看模型结果
+  plot(obj) # 可视化寻优过程
+#--利用最佳模型进行预测分类
+pred <- predict(obj$best.model, iris[, -5])
+(cM <- table(pred, iris[,5]))
+sum(diag(cM))/ sum(cM)
+# [1] 0.98  达到98%的正确率，相当高了
+
+
+#------------------------------案例2：回归问题
+# create data
+x <- seq(0.1, 5, by = 0.05)
+y <- log(x) + rnorm(x, sd = 0.2)
+
+obj <- tune(svm, train.x=x, train.y=y, ranges=list(gamma= seq(0.1, 2, by = 0.1), cost= 2^(2:4)),
+            tunecontrol = tune.control(sampling = 'boot')) # 采用自助抽样
+summary(obj)
+# predict input values
+new <- predict(obj$best.model, x)
+
+# visualize
+plot(x, y)
+points(x, log(x), col = 2)
+points(x, new, col = 4)

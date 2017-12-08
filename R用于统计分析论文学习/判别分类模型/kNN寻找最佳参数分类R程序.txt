@@ -1,0 +1,14 @@
+#--------------------------------案例1：
+  x <- iris[,-5]
+  y <- iris[,5]
+#----利用调节捕获器搜索最佳参数
+  obj2 <- tune.knn(x, y, k = 1:5, tunecontrol = tune.control(sampling = "boot"))
+# 或者
+  #obj2 <- tune(knn, x, y, ranges=list(k = 1:5), tunecontrol= tune.control(sampling='boot'))
+  summary(obj2)
+  plot(obj2)
+#---利用最佳参数重新建立模型，并预测
+irisFit <- knn3(Species ~ ., iris, k = obj2$best.parameters) # formula form of S3 method
+pred <- predict(irisFit, x, type='class')
+(cM <- table(pred, y))
+sum(diag(cM)) / sum(cM) # 准确率达100%，好高啊

@@ -1,0 +1,1390 @@
+setwd('C:\\Users\\Administrator\\Desktop\\新建文件夹\\函数数据分析')
+getwd()
+rm(list=ls())
+library(fda)
+system.file('scripts', package='fda') # 在指定包中搜索指定文件
+#library(help = 'fda')
+load('fdanalysis.Rdata')
+# 数据集介绍 -------------------------------------------------------------------
+## 加拿大天气数据CanadianWeather和daily,前者更详细，后者是前者的简略版
+data(CanadianWeather)
+str(CanadianWeather)
+head(CanadianWeather)
+CanadianWeather$dailyAv[,1,] # 输出一个气象站的数据，一共有35个天气站
+CanadianWeather$place #35个气象站的名字
+CanadianWeather$province # 每个气象站所属的省份
+CanadianWeather$coordinates # 每个气象站的经度和纬度
+CanadianWeather$region # 所属气候带
+CanadianWeather$monthlyTemp #每个气象站的每月平均温度
+CanadianWeather$monthlyPrecip #月平均降雨量
+CanadianWeather$geogindex  #从东到西再到北的顺序
+summary(CanadianWeather)
+
+data("daily")
+str(daily)
+daily$place #气象站的名字
+daily$tempav # 每日平均温度
+daily$precav #每日平均降雨量
+summary(daily)
+daily$place[daily$place== "Pr. Rupert "]
+index <- which(daily$place== "Pr. Rupert ")
+dprec <- daily$precav[,29]
+plot(dprec)
+## 孩子的步态数据
+data(gait) #39个男孩在一个周期中20个运动点臀部角度和膝盖角度，故 20*39*2
+str(gait)
+attr(gait, 'dimnames') #属性是一个列表的数组
+class(gait) #三维数组
+gait[,3,] # 查看第三个男孩的观测
+plot(gait[,3,][,1], gait[,3,][,2], type='b') #第三个个体膝盖角度和臀部角度的关系
+
+## 女孩的成长数据
+data("growth")
+str(growth)
+age <- growth$age
+growth$hgtm #31*39matrix为39个男孩在31个年龄点的身高
+summary(growth$hgtm)
+growth$hgtf #31*54matrix为54个女孩在31个年龄点的身高
+summary(growth$hgtf)
+growth$age #测量的年龄点 31维的向量
+
+## 书法数据
+data(handwrit)
+str(handwrit  )#1401*20*2的三维数组，20次重复，1401点（x,y坐标）
+handwrit[,1,] #一次重复
+#画出20次的书法图像
+pdf('myFda.pdf', width=7, height=5)
+for(i in 1:dim(handwrit)[2]){
+  if(i == 1){
+    plot(handwrit[,i,], type='l')}else{
+    lines(handwrit[,i,], type='l')  
+    }
+}
+dev.off()
+data(handwritTime) #取点的间隔
+str(handwritTime)
+
+
+# 第一章的练习题 -----------------------------------------------------------------
+##1. 生成函数数据
+Tt <- seq(0, 1, by=0.02) # 50个观测时间点
+N <- 10 #10个个体
+n <- length(Tt)
+myFdata <- matrix(NA, N, n)
+for(i in 1:N){
+  for(t in 1:n){
+    #myFdata[i,t] <- 5*sin(i/10)*(Tt[t]+0.5)*exp(2*Tt[t])  # 不含噪声
+    myFdata[i,t] <- 5*sin(i/10)*(Tt[t]+0.5)*exp(2*Tt[t]) + rnorm(1,0, sqrt(i)/20) #含噪声
+  }
+}
+head(myFdata)
+plot(Tt, myFdata[1,], 'l') # 第一个观测样本的图像
+
+par(mfrow= c(1,1))
+
+# 样条估计和局部多项式估计的比较 ---------------------------------------------------------
+
+tvec <- seq(0, 2, length=30) # generate data
+x <- 2*sin(tvec) * exp(tvec) 
+# spline estimator
+xBbasis <- create.bspline.basis(c(0,2), nbasis=13, norder=4)
+# no roughness panelty
+xfdList <- smooth.basis(tvec, x, xBbasis)
+xfd <- xfdList$fd
+plot(tvec, x, type='p')
+lines(xfd, col='green')
+# local polynomial estimator
+library(locfit)
+xlp <- lp(tvec, nn=0.3, deg=1)
+xloc <- locfit(x~xlp)
+lines(xloc, col='red')
+# both methods have a good effect to fit the original curve
+# 第三章 基函数系统 ---------------------------------------------------------------
+
+daybasis65 = create.fourier.basis(c(0,365), 65) # 周期默认为T=365，可以自己设置
+class(daybasis65) # look up class of object
+str(daybasis65) # look brief imformation
+Tt <- 300  # set period
+create.fourier.basis(c(0,365), 65, period=Tt) 
+zerobasis = create.fourier.basis(c(0,365), 65,
+                                 dropind=1) #去掉常数项基函数，或者
+str(zerobasis)
+zerobasis = daybasis65[2:65]
+
+#---B样条基函数
+splinebasis = create.bspline.basis(c(0,10), 13) # 默认的是三次样条
+plot(splinebasis)
+basis2 = create.bspline.basis(c(0,2*pi), 5, 2) # 2阶1度（次），线性样条
+basis3 = create.bspline.basis(c(0,2*pi), 6, 3) 
+basis4 = create.bspline.basis(c(0,2*pi), 7, 4)
+
+splinebasis = create.bspline.basis(c(0,10), 15, 6)
+create.bspline.basis(c(0,10), nbasis=8, norder=5,
+                     breaks=c(0, 1,4,7,10))
+##
+heightbasis <- create.bspline.basis(c(1, 18), 
+                        nbasis = 35, norder=6, breaks=age)
+plot(heightbasis)
+#----常数基函数
+conbasis = create.constant.basis(c(0,1))
+plot(conbasis)
+#----单项式基函数
+monbasis = create.monomial.basis(c(0,1), 4)
+plot(monbasis)
+methods(class='basisfd')
+print(monbasis)
+summary(monbasis)
+is.basis(monbasis)
+#
+?eval.basis
+tvec <- seq(0, 1, 0.02)
+basismatrix = eval.basis(tvec, monbasis)
+Dbasismatrix = eval.basis(tvec, monbasis, 1)
+eval.basis(seq(0, 1, .2), monbasis)
+eval.basis(seq(0, 1, .2), monbasis, 1) # 计算其导数
+#
+basismatrix = predict(monbasis, seq(0, 1, .2)) #预测
+Dbasismatrix = predict(monbasis, seq(0, 1, .2), 1)
+## 第三章的习题
+#2.生成B样条基
+B2basis <- create.bspline.basis(rangeval=c(0,1),
+                      nbasis = 23, norder=4)
+
+plot(B2basis)
+tvec <- seq(0, 1, by = 0.01)
+Bmat <- eval.basis(B2basis, tvec)
+plot(tvec, Bmat[,10], type='l')
+D2mat <- eval.basis(B2basis, tvec, 2)
+plot(tvec, D2mat[,10], type='l')
+#
+
+# 第四章 创建函数数据对象 ------------------------------------------------------------
+
+coefmat <- matrix(c(1,2), nrow=65, ncol=35)
+tempfd = fd(coefmat, daybasis65)
+str(tempfd)
+
+fdnames = list("Age (years)", "Child", "Height (cm)") # 类标签 或
+fdnames[[1]] = "Age (years)"
+fdnames[[2]] = "Child"
+fdnames[[3]] = "Height (cm)"
+
+
+station = vector("list", 35)
+station[[ 1]] = "St. Johns"
+#. . .
+station[[35]] = "Resolute"
+station <- CanadianWeather$place
+station <- as.list(station)
+fdnames = list("Day",
+               "Weather Station" = station,
+               "Mean temperature (deg C)")
+print(tempfd)
+summary(tempfd)
+is.fd(tempfd)
+
+#
+tstFn0 <- fd(c(-1, 2), create.bspline.basis(norder=2)) # 在基中确定了定义域为默认的【0,1】
+plot(tstFn0)
+tstFn0^2
+plot(tstFn0^2)
+tstFn0 <- fd(c(-1, 2), create.monomial.basis(nbasis=2)) # 在基中确定了定义域为默认的【0,1】
+plot(tstFn0) # 绘出该函数图像
+tstFn0*tstFn0
+
+
+fdmeanobj = mean(tstFn0)
+thatvec = eval.fd(tvec, tstFn0) # 计算函数值
+D2thatvec = eval.fd(tvec, tstFn0, 2) # 计算函数的二阶导
+summary(D2thatvec)
+##
+daytime = (1:365)-0.5
+JJindex = c(182:365, 1:181)
+tempmat = daily$tempav[JJindex,]
+tempbasis = create.fourier.basis(c(0,365),65)
+#快速创建函数数据对象
+tempfd = smooth.basis(daytime, tempmat, tempbasis)$fd #tempbasis为“basisfd”对象
+tempfd$fdnames = list("Day (July 2 to June 30)",
+                      "Weather Station",
+                      "Mean temperature (deg. C)")
+plot(tempfd, col=1, lty=1)
+lines(tempfd, col=2)
+#模拟拟合sin曲线
+basis13 = create.bspline.basis(c(0,10), 13) #创建B样条基
+tvec = seq(0,1,len=13) # 设置时间参数区间
+sinecoef = sin(2*pi*tvec) # 设定基函数的系数
+sinefd = fd(sinecoef, basis13, list("t","","f(t)")) # 生成函数数据
+op = par(cex=1.2) # 设置图像参数
+plot(sinefd, lwd=2)
+points(tvec*10, sinecoef, lwd=2)
+par(op)
+#利用回归分析进行平滑
+MtlDaily = matrix(scan("MtlDaily.txt",0),34,365) # 载入数据
+thawdata = t(MtlDaily[,16:47]) # 提取数据16:47列的数据
+daytime = ((16:47)+0.5) #设置时间
+par(cex=1.2)
+plot(daytime, apply(thawdata,1,mean), "b", lwd=2,
+     xlab="Day", ylab="Temperature (deg C)") #绘制平均温度曲线
+thawbasis = create.bspline.basis(c(16,48),7) #建立基函数
+thawbasismat = eval.basis(daytime, thawbasis) # 计算基函数的数值矩阵
+thawcoef = solve(crossprod(thawbasismat),
+                 crossprod(thawbasismat,thawdata)) #计算回归系数
+thawfd = fd(thawcoef, thawbasis,
+            list("Day", "Year", "Temperature (deg C)")) #基于计算的系数估计函数
+plot(thawfd, lty=1, lwd=2, col=1) #画出函数曲线
+plotfit.fd(thawdata[,1], daytime, thawfd[1],
+           lty=1, lwd=2) # 绘出拟合曲线和原数据点
+## 建立线性微分算子
+omega <- 1
+betalist = vector("list", 3)
+betalist[[1]] = fd(0, thawconst.basis)
+betalist[[2]] = fd(omegaˆ2, thawconst.basis)
+betalist[[3]] = fd(0, thawconst.basis)
+harmaccelLfd = Lfd(3, betalist)
+#
+accelLfd = int2Lfd(2) #加速度算子，即二阶导
+harmaccelLfd = vec2Lfd(c(0,omega^2,0), c(0, 365)) #harmonic算子
+class(accelLfd)
+Ltempmat = eval.fd(daytime, tempfd, harmaccelLfd) #就算函数被该算子作用后的函数值
+#
+D2tempfd = deriv.fd(tempfd, 2) #计算函数数据对像的导数，相当于对函数进行变换
+Ltempfd = deriv.fd(tempfd, harmaccelLfd) #从一个函数变到另一个函数
+#---练习题
+nbasis <- 23
+myBspline <- create.bspline.basis(rangeval = c(0,1),
+                            norder = 4, nbasis = nbasis
+                            )
+
+plot(myBspline)
+#由于系数为一个向量，故只有一个函数，其均值也为本身
+coeff <-sin(2*pi*seq(0,1,length=nbasis)) + rnorm(nbasis, 0, 1)
+myfd <- fd(coeff, myBspline, fdnames = list('time','Jhon', 'height'))
+#2.
+plot(myfd)
+lines(seq(0,1,length=nbasis), coeff, col=2, lty=3)
+tvec2 <- seq(0,1,length=51)
+fdvalue <- eval.fd(tvec2, myfd)
+lines(mean(myfd), col=4, lty=5, cex=1.2)
+#N个函数
+N <- 2 
+Coef <- matrix(NA,nbasis, N) # K*N 
+for(i in 1:N){
+  Coef[,i] <- sin(2*pi*seq(0,1,length=nbasis)) + rnorm(nbasis, N, N^2)
+}
+myfd2 <- fd(Coef, myBspline, list('time',list('Jhon','liuwei'), 'height'))
+plot(myfd2) 
+D1myfd2 <- deriv.fd(myfd2, 1) # 绘出一阶导数
+plot(D1myfd2) # 
+D2mydf2 <- deriv.fd(myfd2, 2) # 计算二阶导
+plot(D2mydf2)
+#法二：
+D1myfd3 <- eval.fd(tvec2, myfd2, 1) #计算一阶导数
+plot(tvec2, D1myfd3[,2], type='l')
+lines(tvec2, D1myfd3[,1], col='red')
+
+# 第五章 从噪声数据中计算平滑曲线 --------------------------------------------------------
+
+heightbasis12 <- create.bspline.basis(c(1, 18), 12, 6)
+basismat = eval.basis(age, heightbasis12) #基函数矩阵
+heightmat <- growth$hgtf
+heightcoef <- lsfit(basismat, heightmat, intercept=F)$coef
+heightfd <- fd(heightcoef, heightbasis12, fdnames = list(
+  'age', 'famale', 'height'))
+plot(heightfd)
+heightList = smooth.basis(age, heightmat,heightbasis12) #直接得到平滑函数
+heightfd2 <- heightList$fd
+plot(heightfd2) #这两种方法得到的结果一模一样
+height.df = heightList$df
+height.gcv = heightList$gcv
+hatC <- heightList$y2cMap %*% heightmat
+#手动计算y2cMap矩阵
+age = growth$age
+heightbasismat = eval.basis(age, heightbasis12)
+y2cMap = solve(crossprod(heightbasismat),
+               t(heightbasismat))
+#计算判罚矩阵R
+Rmat = eval.penalty(tempbasis, harmaccelLfd)
+#
+norder = 6
+nbasis = length(age) + norder - 2
+heightbasis = create.bspline.basis(c(1,18),
+                                   nbasis, norder, age)
+heightfdPar = fdPar(heightbasis, 4, 0.01)
+heightfd = smooth.basis(age, heightmat,
+                        heightfdPar)$fd
+plot(heightfd)
+
+#---------案例数据growth
+str(growth)
+age <- growth[[3]]
+heightmat <- growth[[1]]
+plot(age, t(heightmat)[,1])
+heightbasis12 = create.bspline.basis(c(1,18), 12, 6)
+basismat = eval.basis(age, heightbasis12)
+heightcoef = lsfit(basismat, heightmat,
+                   intercept=FALSE)$coef
+heightList = smooth.basis(age, heightmat,heightbasis12) #更方便的平滑基，不用指定确定的基函数
+heightfd = heightList$fd
+height.df = heightList$df
+height.gcv = heightList$gcv
+
+heightbasismat = eval.basis(age, heightbasis12)
+y2cMap = solve(crossprod(heightbasismat),
+               t(heightbasismat)) # 求解基函数的系数矩阵
+
+norder = 6
+nbasis = length(age) + norder - 2
+heightbasis = create.bspline.basis(c(1,18),
+                                   nbasis, norder, age)
+heightfdPar = fdPar(heightbasis, 4, 0.01)
+heightfd = smooth.basis(age, heightmat,heightfdPar)$fd
+#---广义交叉验证选择平滑参数lambda
+hgtfmat <- growth$hgtf
+loglam = seq(-6,0, by=0.25)
+gcvsave = vector(mode='numeric', length=length(loglam))
+dfsave = gcvsave;
+for(i in 1:length(loglam)){
+  lambdai <-  10^loglam[i];
+  hgtfdPari <-  fdPar(heightbasis, 4, lambdai);
+  heightList <-  smooth.basis(age, hgtfmat, hgtfdPari);
+  gcvsave[i] = sum(heightList$gcv);
+  dfsave[i] = heightList$df;
+} 
+loglam1 <- loglam[which.min(gcvsave)]
+10^loglam1 # 最佳的lambda=10^(-4)
+plot(loglam, gcvsave, type='b')
+lambda1 <-  10^loglam1;
+hgtfdPari <-  fdPar(heightbasis, 4, lambda1);
+heightList <-  smooth.basis(age, hgtfmat, hgtfdPari)
+heightList$df
+
+#-------5.3有一个案例
+str(CanadianWeather)
+logprecav = CanadianWeather$dailyAv[
+  dayOfYearShifted, , 'log10precip']  #载入数据
+head(logprecav) 
+str(logprecav)
+dayrange = c(0,365) # 设定时间限
+daybasis = create.fourier.basis(dayrange, 365) #创建基函数
+Lcoef = c(0,(2*pi/diff(dayrange))^2,0) # 设定光滑度判罚的微分算子D3x+omega^2*Dx
+harmaccelLfd = vec2Lfd(Lcoef, dayrange) #将向量转化为微分算子
+plot(harmaccelLfd)
+class(harmaccelLfd)
+loglam = seq(4,9,0.25)
+nlam = length(loglam)
+dfsave = rep(NA,nlam)
+gcvsave = rep(NA,nlam)
+for (ilam in 1:nlam) {
+  cat(paste('log10 lambda =',loglam[ilam],'\n'))
+  lambda = 10^loglam[ilam]
+  fdParobj = fdPar(daybasis, harmaccelLfd, lambda)
+  smoothlist = smooth.basis(day.5, logprecav,
+                            fdParobj)
+  dfsave[ilam] = smoothlist$df
+  gcvsave[ilam] = sum(smoothlist$gcv)
+}
+plot(loglam, gcvsave, type='b')
+lambda = 10^(loglam[which.min(gcvsave)])
+fdParobj = fdPar(daybasis, harmaccelLfd, lambda)
+logprec.fit = smooth.basis(day.5,logprecav,fdParobj)
+logprec.fd = logprec.fit$fd
+fdnames = list("Day (July 1 to June 30)",
+               "Weather Station" = CanadianWeather$place,
+               "Log 10 Precipitation (mm)")
+logprec.fd$fdnames = fdnames
+plot(logprec.fd)
+plotfit.fd(logprecav, day.5, logprec.fd) #绘出所有单独的曲线
+##为了保证非负性，先对log尺度的数据进行平滑，在exp变换即可
+lambda = 1e3
+WfdParobj = fdPar(daybasis, harmaccelLfd, lambda)
+VanPrec = CanadianWeather$dailyAv[
+  dayOfYearShifted, 'Vancouver', 'Precipitation.mm']
+VanPrecPos = smooth.pos(day.5, VanPrec, WfdParobj)
+Wfd = VanPrecPos$Wfdobj
+Wfd$fdnames = list("Day (July 1 to June 30)",
+                   "Weather Station" = CanadianWeather$place,
+                   "Log 10 Precipitation (mm)")
+plot(Wfd)
+precfit = exp(eval.fd(day.5, Wfd))
+##单调平滑
+Wbasis = create.bspline.basis(c(1,n), nbasis)
+Wfd0 = fd(matrix(0,nbasis,1), Wbasis)
+WfdPar = fdPar(Wfd0, 2, 1e-4)
+result = smooth.monotone(day, tib, WfdPar)
+Wfd = result$Wfd
+beta = result$beta
+dayfine = seq(1,n,len=151)
+tibhat = beta[1] + beta[2]*eval.monfd(dayfine ,Wfd)
+Dtibhat = beta[2]*eval.monfd(dayfine, Wfd, 1)
+D2tibhat = beta[2]*eval.monfd(dayfine, Wfd, 2)
+## 概率密度函数的估计
+data(RegPrec)
+Wknots = RegPrec[round(N*seq(1/N,1,len=11),0)]
+Wnbasis = length(Wknots) + 2
+Wbasis = create.bspline.basis(range(RegPrec),13,4,
+                              Wknots)
+Wlambda = 1e-1
+WfdPar = fdPar(Wbasis, 2, Wlambda)
+densityList = density.fd(RegPrec, WfdPar)
+Wfd = densityList$Wfdobj
+C = densityList$C
+Zfine = seq(RegPrec[1],RegPrec[N],len=201)
+Wfine = eval.fd(Zfine, Wfd)
+Pfine = exp(Wfine)/C
+##对数据拟合的评估
+logprecmat = eval.fd(day.5, logprec.fd)
+logprecres = logprecav - logprecmat
+# across stations
+logprecvar1 = apply(logprecres^2, 1, sum)/35
+# across time
+logprecvar2 = apply(logprecres^2, 2, sum)/(365-12)
+logstddev.fd = smooth.basis(day.5,
+                            log(logprecvar1)/2, fdParobj)$fd
+logprecvar1fit = exp(eval.fd(day.5, logstddev.fd))
+plot(logprecvar1fit)
+
+plot(day.5, VanPrec, type="p", cex=1.2,
+     xlab="Day (July 1 to June 30)",
+     ylab="Millimeters",
+     main="Vancouver’s Precipitation")
+lines(day.5, precfit,lwd=2)
+
+logprec.fd
+meanlogprec.fd <- mean(logprec.fd)
+stddevlogprec <- std.fd(logprec.fd)
+summary(stddevlogprec)
+logprecvar.bifd = var.fd(logprec.fd)
+weektime = seq(0,365,length=53)
+logprecvar_mat = eval.bifd(weektime, weektime,
+                           logprecvar.bifd)
+persp(weektime, weektime, logprecvar_mat,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Day (July 1 to June 30)",
+      ylab="Day (July 1 to June 30)",
+      zlab="variance(log10 precip)")
+contour(weektime, weektime, logprecvar_mat)
+#
+day5time = seq(0,365,5)
+logprec.varmat = eval.bifd(day5time, day5time,
+                           logprecvar.bifd)
+contour(day5time, day5time, logprec.varmat,
+        xlab="Day (July 1 to June 30)",
+        ylab="Day (July 1 to June 30)", lwd=2,
+        labcex=1)
+#------------第五章练习题
+#1.完整的函数数据平滑拟合过程
+Trange <- c(0, 1) #设定时间参数的取值上下限
+n <- 50 # 观测时间点的个数
+sd <- 0.4 # 误差的标准差
+Tt <- seq(0, 1, length=50) # 生成观测时间点
+Y <- sin(4*pi*Tt) + rnorm(n,0, sd=sd) # 生成函数数据，对应时间点的观测
+plot(Tt, Y, col=2, lty=3)  # 原始数据图像
+Ybasis <- create.fourier.basis(Trange, nbasis=10
+                               ) #设定傅里叶10个基函数
+# 设定平滑的参数包括基函数，判罚算子，判罚的平滑参数
+fdPar1 <- fdPar(fdobj=Ybasis, Lfdobj=1, lambda = 0.2) #微分算子对拟合很重要
+Yfdlist <- smooth.basis(Tt, Y, fdPar1) # 进行平滑
+Yfd <- Yfdlist$fd # 得到平滑后的函数数据
+Yfdlist$df # 平滑的自由度
+lines(Yfd) # 画出平滑曲线
+predY <- eval.fd(Tt, Yfd) # 计算平滑后的预测值
+RMSE <- sqrt(sum((Y- predY)^2)/(n-Yfdlist$df)) # 均方误差根
+sd #标准差
+#--利用GVC寻找更好的拟合
+#c.
+YBspline <- create.bspline.basis(Trange, nbasis=13, norder = 6)#B样条基
+omega1 <- 1 #设定omega大小
+#设定判罚的线性微分算子
+Lfdobj1 <- vec2Lfd(bwtvec=c(0,0, omega1^2, 0), rangeval = Trange)
+#Lfdobj1 <- Lfd(nderiv = 4, bwtlist=list(0,0, omega1^2,0))
+logLam <- seq(-20, -4, by=0.5) # 生成一系列平滑参数值，寻找最佳的
+nn <- length(logLam)
+gcvscore <- vector('numeric', length = nn) #初始化gcv得分向量
+for(i in 1:nn){
+fdPar2 <- fdPar(fdobj = YBspline, Lfdobj=Lfdobj1, 
+                lambda=10^(logLam[i]))
+YBfdlist <- smooth.basis(argvals = Tt, Y, fdParobj=fdPar2)
+gcvscore[i] <- YBfdlist$gcv # 得到对应平滑参数的GCV得分值
+}
+plot(logLam, gcvscore, type='l') #绘出GCV得分图，寻找最低点
+##得到最佳的平滑参数值
+Lambda <- 10^logLam[which.min(gcvscore)] #得到最佳的lambda
+fdPar3 <- fdPar(fdobj = YBspline, Lfdobj=Lfdobj1, 
+                lambda=Lambda)
+YBfdList <- smooth.basis(argvals = Tt, Y, fdParobj=fdPar3) #再次平滑拟合
+YBfd <- YBfdList$fd
+YBfdList$df
+plot(YBfd)
+plotfit.fd(Y, Tt, YBfd)
+##绘出相位图
+Yvelocity <- eval.fd(Tt, YBfd, Lfdobj=1) #计算一阶导的值
+Yacce <- eval.fd(Tt, YBfd, Lfdobj=2) #计算二阶导的值
+plot(Yvelocity, Yacce, type='l', col='green4', lty=2,
+     main='acceleration vs velocity') #绘图
+
+
+# 第六章 函数数据的描述统计量 ----------------------------------------------------------
+## 函数数据内积的计算，即函数乘积的积分的计算
+dayvec = seq(0,365,len=101) # 生成时间点
+xivec = exp(20*cos(2*pi*(dayvec-197)/365)) # 生成xi函数
+xibasis = create.bspline.basis(c(0,365),13)
+xifd = smooth.basis(dayvec, xivec, xibasis)$fd # 将xi函数转化为函数数据
+tempLmat = inprod(tempbasis, xifd) # 计算内积矩阵
+precLmat = inprod(precbasis, xifd)
+## 估计曲线的置信限的计算
+lambda = 1e6; #设置光滑参数
+fdParobj = fdPar(daybasis, harmaccelLfd, lambda) #设置函数参数
+logprecList= smooth.basis(day.5, logprecav, fdParobj) #函数平滑
+logprec.fd = logprecList$fd #取出函数对象
+fdnames = list("Day (July 1 to June 30)",
+               "Weather Station" = CanadianWeather$place,
+               "Log 10 Precipitation (mm)") #函数对象命名
+logprec.fd$fdnames = fdnames #便于图形化展示
+# 利用平滑方法估计方差
+logprecmat = eval.fd(day.5, logprec.fd) #计算预测的函数值，每一列为一条函数预测线，共35列
+str(logprecmat)
+logprecres = logprecav - logprecmat #计算残差
+logprecvar = apply(logprecres^2, 1, sum)/(35-1) #计算残差的方差
+length(logprecvar)
+lambda = 1e8 #设定平滑参数
+resfdParobj = fdPar(daybasis, harmaccelLfd, lambda) #设定函数参数
+length(day.5)
+logvar.fit = smooth.basis(day.5, log(logprecvar),
+                          resfdParobj) # 函数平滑
+logvar.fd = logvar.fit$fd # 取出函数
+varvec = exp(eval.fd(day.5, logvar.fd))
+SigmaE = diag(as.vector(varvec)) # 估计出残差的方差
+
+y2cMap = logprecList$y2cMap #取出y2c映射矩阵
+c2rMap = eval.basis(day.5, daybasis) # 计算c2r映射矩阵
+dim(c2rMap)
+dim(y2cMap)
+dim(SigmaE)
+Sigmayhat = c2rMap %*% y2cMap %*% SigmaE %*%
+  t(y2cMap) %*% t(c2rMap) #计算探测量的协方差矩阵
+logprec.stderr = sqrt(diag(Sigmayhat))  #计算标准差
+logprec29 = eval.fd(day.5, logprec.fd[29]) #取出第29条函数曲线，计算他的值
+plot(logprec.fd[29], lwd=2, ylim=c(0.2, 1.3)) #画出第29的平滑函数图像
+lines(day.5, logprec29 + 2*logprec.stderr,
+      lty=2, lwd=2) #置信带，利用2sigma原则画出置信带
+lines(day.5, logprec29 - 2*logprec.stderr,
+      lty=2, lwd=2)
+points(day.5, logprecav[,29], col='green4') # 画出原始的点 
+#-------------第六章练习题
+ind <- vector('list', length=4) # 提取各区域气象站编号
+for(i in 1:4){
+  ind[[i]] <- which(CanadianWeather$region == 
+                      levels(factor(CanadianWeather$region))[i])
+}
+str(CanadianWeather$dailyAv)
+head(CanadianWeather$dailyAv[,1,])
+Ctemp <- CanadianWeather$dailyAv[,,1] #提取出每天平均温度的数据
+str(Ctemp)
+lambda <- 10^6
+fdPar4 <- fdPar(daybasis, Lfdobj = 1, lambda = lambda)
+Cfdlist <- smooth.basis(day.5, Ctemp, fdPar4)
+Cfd <- Cfdlist$fd
+Ccovfd <- var.fd(Cfd)
+class(Ccovfd)
+Ccovmat <- eval.bifd(day.5, day.5, Ccovfd)
+persp(day.5, day.5, Ccovmat,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Days(1 to 365)",
+      ylab="Days (1 to 100)",
+      zlab="Covariance",
+      col=rainbow(24),
+      main='协方差函数')
+Ccovfd1 <- var.fd(Cfd[ind[[1]]])
+Ccovmat1 <- eval.bifd(day.5, day.5, Ccovfd1)
+persp(day.5, day.5, Ccovmat1,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Days(1 to 365)",
+      ylab="Days (1 to 100)",
+      zlab="Covariance",
+      col=rainbow(24),
+      main='协方差函数')
+Ccovfd2 <- var.fd(Cfd[ind[[2]]])
+str(Ccovfd2)
+Ccovmat2 <- eval.bifd(day.5, day.5, Ccovfd2)
+persp(day.5, day.5, Ccovmat2,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Days(1 to 365)",
+      ylab="Days (1 to 100)",
+      zlab="Covariance",
+      col=rainbow(12),
+      main='协方差函数')
+Cmeanfd3 <- mean(Cfd[ind[[3]]])
+plot(Cmeanfd3)
+plot(mean(Cfd))
+# 2.
+var.fd(Cfd[1], logprec.fd[1])
+# 3. 相平面图
+Cvoci <- eval.fd(day.5, Cfd[1], Lfdobj = 1) #一阶导数
+Cacce <- eval.fd(day.5, Cfd[1], Lfdobj=2) # 二阶导数
+plot(Cvoci, Cacce, main='acceleration VS vocity', col='green2',
+     type = 'l')
+# 4. 标准差函数
+logprecStd <- sd.fd(logprec.fd)
+logprecMean <- mean(logprec.fd)
+plot(eval.fd(day.5, logprecMean),eval.fd(day.5, logprecStd) , 
+     main='std VS mean', type='l')
+#-----------------论文数据操作
+#--------开始
+library(xlsx)
+fData <- read.xlsx('fdadata2.xlsx', sheetIndex = 1)
+str(fData)
+fData <- t(as.matrix(fData))
+n <- nrow(fData)
+N <- ncol(fData)
+argvals <- seq(0,100, len=nrow(fData) )
+y <- fData
+#  Set up spline basis system
+nbasis = n + 2
+basisobj = create.bspline.basis(c(0,100),nbasis)
+#  Set up roughness penalty with smoothing parameter 10^(-5)
+lambda = 10^(-5)
+fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+#  Smooth the data, outputting a list containing various quantities
+smoothlist = smooth.basis(argvals, y, fdParobj)
+xfd = smoothlist$fd   #  the curve smoothing the data
+df  = smoothlist$df   #  the degrees of freedom in the smoothing curve
+gcv = smoothlist$gcv  #  the value of the gcv statistic
+min(gcv)
+#RMSE = sqrt(mean((eval.fd(argvals, xfd) - x)^2))
+#Lcoef =  c(0,(2*pi/diff(Trange))^2,0)
+#harmaccelLfd =  vec2Lfd(Lcoef, Trange)
+#交互绘图，绘出每一条函数曲线，一共50条
+plotfit.fd(y, argvals, xfd)
+#-------------广义交叉验证选择平滑
+loglam =  seq(1,5,0.25)
+nlam =  length(loglam)
+dfsave =  rep(NA,nlam)
+gcvsave =  rep(NA,nlam)
+for (ilam in 1:nlam) {
+  cat(paste('log10 lambda =',loglam[ilam],'\n'))
+  lambda = 10^loglam[ilam]
+  fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+  #  Smooth the data, outputting a list containing various quantities
+  smoothlist = smooth.basis(argvals, y, fdParobj)
+  dfsave[ilam] = smoothlist$df
+  gcvsave[ilam] = sum(smoothlist$gcv)
+}
+plot(loglam, gcvsave, type='b', 
+     xlab=expression(lambda))#paste0('log',expression(lambda)))
+lambda = 10^(loglam[which.min(gcvsave)])
+fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+Tt.fit = smooth.basis(argvals, y, fdParobj)
+Tt.fd = Tt.fit$fd
+fdnames = list("times ( 1 to 100)",
+               "objects",
+               "y value ")
+Tt.fd$fdnames = fdnames
+plot(Tt.fd)
+plotfit.fd(fData, argvals, Tt.fd,col='red')
+#------均值函数
+meanTt <- mean(Tt.fd)
+plot(meanTt, col='red', main='mean function')
+for(i in 1:ncol(fData)){
+  points(argvals, fData[,i]) #, col='gray'
+} # 将原始函数数据点画在图中
+lines(meanTt, col='red') #添加均值函数曲线到图中。
+#-----协方差函数表面图
+Ttvar.bifd <- var.fd(Tt.fd)
+Tx <- seq(0, 100, length=nrow(fData))
+Ty <- seq(0, 100, length=nrow(fData))
+Ttvar.mat <- eval.bifd(Tx, Ty, Ttvar.bifd)
+persp(Tx, Ty, Ttvar.mat,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Times(1 to 100)",
+      ylab="Times (1 to 100)",
+      zlab="Covariance",
+      col=rainbow(24),
+      main='协方差函数')
+
+#------广义交叉验证选择平滑参数lambda
+dayrange = c(0,100) # set time limits
+day <- 1:100 # set time points 
+daybasis = create.fourier.basis(dayrange) # create basis function to smoothing fd
+Lcoef = c(0,(2*pi/diff(dayrange))^2,0) 
+harmaccelLfd = vec2Lfd(Lcoef, dayrange) # set panelty diff operator
+loglam = seq(4,9,0.25)
+nlam = length(loglam)
+dfsave = rep(NA,nlam)
+gcvsave = rep(NA,nlam)
+for (ilam in 1:nlam) {
+  cat(paste('log10 lambda =',loglam[ilam],'\n'))
+  lambda = 10^loglam[ilam]
+  fdParobj = fdPar(daybasis, harmaccelLfd, lambda)
+  smoothlist = smooth.basis(day, fData,
+                            fdParobj)
+  dfsave[ilam] = smoothlist$df
+  gcvsave[ilam] = sum(smoothlist$gcv)
+}
+plot(loglam, gcvsave, type='b')
+lambda = exp(loglam[which.min(gcvsave)])
+fdParobj = fdPar(daybasis, harmaccelLfd, lambda)
+logprec.fit = smooth.basis(day,fData,fdParobj)
+logprec.fd = logprec.fit$fd
+fdnames = list("Day (July 1 to June 30)",
+               "Weather Station" = CanadianWeather$place,
+               "Log 10 Precipitation (mm)")
+logprec.fd$fdnames = fdnames
+plot(logprec.fd)
+plotfit.fd(fData, day, logprec.fd)
+
+
+##
+##                       Simulated data example 3:
+##           a roughness-penalized smooth of a sample of curves
+##
+n =  51   #  number of observations per curve
+N = 100   #  number of curves
+
+n <- nrow(fData)
+N <- ncol(fData)
+argvals = seq(0,1,len=n)
+argvals <- seq(0,100, len=nrow(fData) )
+#  The true curve values are linear combinations of fourier function
+#  values.
+#  Set up the fourier basis
+nfourierbasis = 13
+fourierbasis = create.fourier.basis(c(0,1),nfourierbasis)
+fourierbasismat = eval.basis(argvals,fourierbasis)
+#  Set up some random coefficients, with declining contributions from
+#  higher order basis functions
+basiswt = matrix(exp(-(1:nfourierbasis)/3),nfourierbasis,N)
+xcoef = matrix(rnorm(nfourierbasis*N),nfourierbasis,N)*basiswt
+xfd = fd(xcoef, fourierbasis)
+x   = eval.fd(argvals, xfd)
+#  Add independent Gaussian noise to the data with std. dev. 0.2
+sigerr = 0.2
+y = x + matrix(rnorm(c(x)),n,N)*sigerr
+dim(y)
+y <- fData
+#  Set up spline basis system
+nbasis = n + 2
+basisobj = create.bspline.basis(c(0,1),nbasis)
+basisobj = create.bspline.basis(c(0,100),nbasis)
+#  Set up roughness penalty with smoothing parameter 10^(-5)
+lambda = 10^(-5)
+fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+#  Smooth the data, outputting a list containing various quantities
+smoothlist = smooth.basis(argvals, y, fdParobj)
+xfd = smoothlist$fd   #  the curve smoothing the data
+df  = smoothlist$df   #  the degrees of freedom in the smoothing curve
+gcv = smoothlist$gcv  #  the value of the gcv statistic
+RMSE = sqrt(mean((eval.fd(argvals, xfd) - x)^2))
+#  Display the results, note that a gcv value is returned for EACH curve,
+#  and therefore that a mean gcv result is reported
+cat(round(c(df,RMSE,mean(gcv)),3),"\n")
+#  the fits are plotted interactively by plotfit.fd ... click to advance
+#  plot
+plotfit.fd(y, argvals, xfd)
+#  Repeat these results for a range of log10(lambda) values
+loglamout = plotGCVRMSE.fd(-6, -3, 0.25, x, argvals, y, fdParobj)
+#  Our results were:
+
+#------第七章 函数主成分分析
+
+logprec.pcalist <- pca.fd(logprec.fd, 2)  #对函数进行函数主成分分析
+logprec.pcalist$varprop # explains 96% variance
+print(logprec.pcalist$values)  #提取第1,2主成分，并输出所有特征值
+plot.fd(logprec.pcalist$meanfd, ylim=c(0, 0.5))
+plot.fd(logprec.pcalist$harmonics[1]) # the first pricipal component 
+plot.fd(logprec.pcalist$harmonics[2]) # the first pricipal component 
+#
+plot.pca.fd(logprec.pcalist) #输出主成分图像
+##对主成分进行旋转，揭示更多有意义的方差成分
+logprec.rotpcalist <- varmx.pca.fd(logprec.pcalist)
+plot.pca.fd(logprec.rotpcalist)
+str(logprec.rotpcalist)
+plot.fd(logprec.rotpcalist$meanfd)
+plot.fd(logprec.rotpcalist$harmonics[1])
+plot.fd(logprec.rotpcalist$harmonics[2])
+logprec.rotpcalist$scores # 旋转的主成分得分
+plot(logprec.rotpcalist$scores, xlab='rotated harmonic 1',
+     ylab='rotated harmonic 2') # 绘出主成分得分图
+text(logprec.rotpcalist$scores, labels=CanadianWeather$place, cex=0.7, col='green4')
+##残差的PCA
+logprecres.fd <- smooth.basis(day.5, logprecres, fdParobj)$fd
+plot(logprecres.fd, lwd=2, col=1, lty=1, cex=1.2,
+     xlim=c(0,365), ylim=c(-0.07, 0.07),
+     xlab="Day", ylab="Residual (log 10 mm)")
+
+
+# 多元的XYFPCA ---------------------------------------------------------------
+fdarange = c(0, 2300) # 设定时间限
+fdabasis = create.bspline.basis(fdarange, 105, 6) # 创建b样条基
+fdatime = seq(0, 2300, len=1401) # 设定观测时间点向量
+fdafd =  smooth.basis(fdatime, handwrit, fdabasis)$fd # 函数平滑得到函数数据
+str(handwrit)
+fdafd$fdnames[[1]] = "Milliseconds" #对函数数据命名，方便可视化展示
+fdafd$fdnames[[2]] = "Replications"
+
+nharm = 3 # 设定主成分个数
+fdapcaList = pca.fd(fdafd, nharm) # 对函数数据进行函数主成分分析
+plot.pca.fd(fdapcaList) # 可视化
+fdarotpcaList = varmx.pca.fd(fdapcaList) # 对主成分旋转
+plot.pca.fd(fdarotpcaList) # 可视化旋转的主成分
+fdafd$fdnames[[3]] = list("X", "Y")
+#
+fdaeig = fdapcaList$values # 为旋转的特征值
+neig = 12 
+x = matrix(1,neig-nharm,2)
+x[,2] = (nharm+1):neig
+y = log10(fdaeig[(nharm+1):neig])
+c = lsfit(x,y,int=FALSE)$coef
+par(mfrow=c(1,1),cex=1.2)
+plot(1:neig, log10(fdaeig[1:neig]), "b",
+     xlab="Eigenvalue Number",
+     ylab="Log10 Eigenvalue")
+lines(1:neig, c[1]+ c[2]*(1:neig), lty=2)
+#
+plot(mean(fdafd))
+plot.fd(fdarotpcaList$harmonics[1])
+
+#典型相关分析
+ccafdPar = fdPar(daybasis, 2, 5e6)
+ncon = 3
+ccalist = cca.fd(tempfd, logprec.fd, ncon,
+                 ccafdPar, ccafdPar)
+
+ccawt.temp = ccalist$ccawtfd1
+ccawt.logprec = ccalist$ccawtfd2
+corrs = ccalist$ccacorr
+ccascr.temp = ccalist$ccavar1
+ccascr.logprec = ccalist$ccavar2
+plot.cca.fd(ccalist) 
+#------------------第9章 标量响应的函数线性模型
+head(daily$precav)
+str(daily$precav)
+annualprec = log10(apply(daily$precav,2,sum))  # 每年总的年平均降雨量
+tempbasis =create.fourier.basis(c(0,365),65)
+head(daily$tempav) # 平均温度
+tempSmooth=smooth.basis(day.5,daily$tempav,tempbasis)
+tempfd =tempSmooth$fd # 温度作为函数数据
+templist = vector("list",2) # 用于放解释变量数据
+templist[[1]] = rep(1,35) # 虚拟变量1
+templist[[2]] = tempfd # 温度函数数据变量‘fd’
+
+conbasis = create.constant.basis(c(0,365))
+betabasis = create.fourier.basis(c(0,365),5)
+betalist = vector("list",2)
+betalist[[1]] = conbasis
+betalist[[2]] = betabasis
+fRegressList = fRegress(annualprec,templist,betalist)
+betaestlist = fRegressList$betaestlist
+tempbetafd = betaestlist[[2]]$fd
+plot(tempbetafd, xlab="Day",
+     ylab="Beta for temperature")
+annualprechat1 = fRegressList$yhatfdobj
+annualprecres1 = annualprec - annualprechat1
+SSE1.1 = sum(annualprecres1^2)
+SSE0 = sum((annualprec - mean(annualprec))^2)
+SSE1.1/SSE0  # sdandardized mean square error
+RSQ1 = (SSE0-SSE1.1)/SSE0
+Fratio1 = ((SSE0-SSE1.1)/5)/(SSE1.1/29)
+#-------------带判罚的回归系数
+Lcoef = c(0,(2*pi/365)^2,0) # set panelty differential operator
+harmaccelLfd = vec2Lfd(Lcoef, c(0,365)) 
+betabasis = create.fourier.basis(c(0, 365), 35) # set up basis for beta function
+lambda = 10^12.5 # set smoothing Par subjectively
+betafdPar = fdPar(betabasis, harmaccelLfd, lambda) # set Par for fRegression() function
+betalist[[2]] = betafdPar
+annPrecTemp = fRegress(annualprec, templist,
+                       betalist) # do regression
+betaestlist2 = annPrecTemp$betaestlist # obtain estimated beta function
+annualprechat2 = annPrecTemp$yhatfdobj # obtain estimated response
+SSE1.2 = sum((annualprec-annualprechat2)^2) # sum of square error
+RSQ2 = (SSE0 - SSE1.2)/SSE0 # determination coefficient R^2
+Fratio2 = ((SSE0-SSE1.2)/3.7)/(SSE1.2/30.3) # F statistics
+##
+betalist[[2]] = fdPar(conbasis) # set Par for fRegress() function
+fRegressList = fRegress(annualprec, templist,
+                        betalist)
+betaestlist = fRegressList$betaestlist # obtain estimated beta function
+annualprechat = fRegressList$yhatfdobj # estimated response variable
+RSQ = (SSE0 - SSE1)/SSE0 # R^2
+Fratio = ((SSE0-SSE1)/1)/(SSE1/33) # F statistics
+SSE1 = sum((annualprec-annualprechat)^2) # calculate error square sum
+
+#----选择平滑参数
+loglam = seq(1,8,0.5)  # set preselected smoothing parameters set
+nlam = length(loglam) # get the set length
+SSE.CV = matrix(0,nlam,1) # initiate CV score matrix
+for (ilam in 1:nlam) {
+  lambda = 10^loglam[ilam] # get smoothing parameter
+  betalisti = betalist # obtain beta function base 
+  betafdPar2 = betalisti[[2]] # set fdPar for beta function
+  betafdPar2$lambda = lambda # put smoothing Par into fdPar
+  betalisti[[2]] = betafdPar2 # 
+  fRegi = fRegress.CV(annualprec, templist, # obtain Regression CV score
+                      betalisti)
+  SSE.CV[ilam] = fRegi$SSE.CV # give it to SSE.CV
+}
+plot(loglam, SSE.CV, type='b')
+loglam[which.min(SSE.CV)] # obtain best smoothing parameter
+
+#----------回归系数的置信区间
+resid = annualprec - annualprechat
+SigmaE.= sum(residˆ2)/(35-fRegressList$df)
+SigmaE = SigmaE.*diag(rep(1,35))
+y2cMap = tempSmooth$y2cMap
+stderrList = fRegress.stderr(fRegressList, y2cMap,
+                             SigmaE)
+betafdPar = betaestlist[[2]]
+betafd = betafdPar$fd
+betastderrList = stderrList$betastderrlist
+betastderrfd = betastderrList[[2]]
+plot(betafd, xlab="Day",
+     ylab="Temperature Reg. Coeff.",
+     ylim=c(-6e-4,1.2e-03), lwd=2)
+lines(betafd+2*betastderrfd, lty=2, lwd=1)
+lines(betafd-2*betastderrfd, lty=2, lwd=1)
+#--------9.4.5 基于函数主成分的标量响应模型
+daybasis365=create.fourier.basis(c(0, 365), 365)  # create fourier basis
+lambda =1e6 # set smoothing parameter for fit curve panelty
+tempfdPar =fdPar(daybasis365, harmaccelLfd, lambda) # set fdPar
+tempfd =smooth.basis(day.5, daily$tempav,
+                     tempfdPar)$fd  # do smoothing
+lambda = 1e0 # the paenlty smoothing Par for estimating harmonic function 
+tempfdPar = fdPar(daybasis365, harmaccelLfd, lambda) # basis etc for estimate harmonic function
+temppca = pca.fd(tempfd, 4, tempfdPar) # do FPCA
+harmonics = temppca$harmonics # obtain harmonics functions
+# linear regression on fpca scores
+pcamodel = lm(annualprec~temppca$scores) # linear regression on fpca scores
+pcacoefs = summary(pcamodel)$coef # obtain regression coefficients
+betafd = pcacoefs[2,1]*harmonics[1] +
+  pcacoefs[3,1]*harmonics[2] +
+  pcacoefs[4,1]*harmonics[3]  # obtain beta function estimator
+coefvar = pcacoefs[,2]^2 #  obtain beta covariance matrix, that is sdandard error square
+betavar = coefvar[2]*harmonics[1]^2 +
+  coefvar[3]*harmonics[2]^2 +
+  coefvar[4]*harmonics[3]^2 # obtain beta function estimator's variance function
+# obtain the beta coefficient function interval estimation
+plot(betafd, xlab="Day", ylab="Regression Coef.",
+     ylim=c(-6e-4,1.2e-03), lwd=2) # plot beta function
+lines(betafd+2*sqrt(betavar), lty=2, lwd=1) # add confidence band
+lines(betafd-2*sqrt(betavar), lty=2, lwd=1)
+
+# --------9.4 统计检验
+F.res = Fperm.fd(annualprec, templist, betalist)
+
+
+# 第五章 函数响应线性模型 ------------------------------------------------------------
+
+## set covariate data structure
+regions = unique(CanadianWeather$region) # obtain region vector
+p = length(regions) + 1 # specify number of covariates including dummy covariate one 
+regionList = vector("list", p) # initiate list for design matrix
+regionList[[1]] = c(rep(1,35),0)
+for (j in 2:p) {
+  xj = CanadianWeather$region == regions[j-1]
+  regionList[[j]] = c(xj,1)
+}
+## set response data structure
+coef = tempfd$coef # obtain coefficient matrix
+coef36 = cbind(coef,matrix(0,65,1)) # add constrained condition
+temp36fd = fd(coef36,tempbasis,tempfd$fdnames) # create function data
+## set fdPar for regression coefficient function 
+betabasis = create.fourier.basis(c(0, 365), 11) # create basis
+betafdPar = fdPar(betabasis) 
+betaList = vector("list",p)
+for (j in 1:p) betaList[[j]] = betafdPar  
+## do regression
+fRegressList = fRegress(temp36fd, regionList,
+                        betaList)
+betaestList = fRegressList$betaestlist # obtain estimated beta function
+regionFit = fRegressList$yhatfd # estimated response
+regions = c("Canada", regions)
+par(mfrow=c(2,3),cex=1)
+for (j in 1:p) plot(betaestList[[j]]$fd, lwd=2,
+                    xlab="Day (July 1 to June 30)",
+                    ylab="", main=regions[j]) # plot jth regression coefficient beta function
+plot(regionFit, lwd=2, col=1, lty=1, 
+     xlab="Day", ylab="",
+     main="Prediction") # plot estimated response function
+
+#---10.2.3 Knee Angle Predicted from Hip Angle
+Hip <- gait[,,1]  # obtain data n*N matrix
+Knee <- gait[,,2]
+gaT <- 1:20 # set observation time points
+ga.basis <- create.bspline.basis(c(0,20), 13) # set smoothing basis
+ga.fdList <- smooth.basis(gaT, Hip, ga.basis) # don't exert panelty to smoothing 
+hipfd <- ga.fdList$fd # obtain smoothing fd
+xfdlist = list(rep(1,39), hipfd)
+gaitbasis <- ga.basis
+betafdPar = fdPar(gaitbasis, harmaccelLfd)
+betalist = list(betafdPar,betafdPar)
+kneefdList <- smooth.basis(gaT, Knee, betafdPar)
+kneefd <- kneefdList$fd
+fRegressList = fRegress(kneefd, xfdlist, betalist)
+kneehatfd = fRegressList$yhatfd$fd
+class(kneehatfd)
+plot(mean(hipfd))
+plot(mean(kneefd))
+betaestlist = fRegressList$betaestlist
+gaittime <- gaT
+kneehatmat = eval.fd(gaittime, kneehatfd)
+resmat. = Knee - kneehatmat
+SigmaE = cov(t(resmat.))
+##
+gaitfine <- gaittime
+kneefinemat = eval.fd(gaitfine, kneefd)
+kneemeanfd <- mean(kneefd)
+kneemeanvec = eval.fd(gaitfine, kneemeanfd)
+kneehatfinemat = eval.fd(gaitfine, kneehatfd)
+resmat = kneefinemat - kneehatfinemat
+ncurve <- 39
+resmat0 = kneefinemat -
+  kneemeanvec %*% matrix(1,1,ncurve)
+SSE0 = apply((resmat0)^2, 1, sum)
+SSE1 = apply(resmat^2, 1, sum)
+Rsqr = (SSE0-SSE1)/SSE0
+##
+y2cMap = kneefdList$y2cMap
+fRegressList1 = fRegress(kneefd, xfdlist, betalist, wt=NULL,
+                         y2cMap=y2cMap, SigmaE)
+fRegressList2 = fRegress.stderr(fRegressList1,
+                                y2cMap, SigmaE)
+betastderrlist = fRegressList2$betastderrlist
+titlelist = list("Intercept", "Hip coefficient")
+plotbeta(betaestlist, betastderrlist, gaitfine, # plot regression coefficient function
+         titlelist)
+#-----10.3 Beyond the Concurrent Model
+
+#-----10.4 A Functional Linear Model for Swedish Mortality
+# illustration:These data were obtained
+#              from http://mortality.org
+betabasis = create.bspline.basis(c(0,80),23)
+beta0Par = fdPar(betabasis, 2, 1e-5)
+beta1sPar = fdPar(betabasis, 2, 1e3)
+beta1tPar = fdPar(betabasis, 2, 1e3)
+betaList = list(beta0Par, beta1sPar, beta1tPar)
+##
+linmodSmooth = linmod(NextYear, LastYear, betaList)
+
+# 10.5 函数假设的置换检验 ----------------------------------------------------------
+# t test
+tperm.fd(heightfd, heightfd2)
+# F test
+F.res = Fperm.fd(temp36fd, regionList, betaList)
+
+# 第十一章 主微分分析 --------------------------------------------------------------
+
+#---11.3 Lip 数据的主微分分析
+lipfd = smooth.basisPar(liptime, lip, 6,
+                        Lfdobj=int2Lfd(4), lambda=1e-12)$fd
+names(lipfd$fdnames) = c("time(seconds)",
+                         "replications", "mm")
+lipbasis = lipfd$basis
+bwtlist = list(fdPar(lipbasis,2,0),
+               fdPar(lipbasis,2,0))
+pdaList = pda.fd(lipfd, bwtlist)
+plot.pda.fd(pdaList,whichdim=3)
+dfd = (0.25*pdaList$bwtlist[[2]]$fdˆ2
+       - pdaList$bwtlist[[1]]$fd )
+dfd$fdnames= list('time' ,'rep','discriminant')
+pda.overlay(pdaList)
+#-------11.4 PDA of the Handwriting Data
+str(handwrit)
+str(handwritTime)
+
+xfdlist = list(fdafd[,1],fdafd[,2])
+pdaPar = fdPar(fdabasis,2,1)
+pdaParlist = list(pdaPar, pdaPar)
+bwtlist = list( list(pdaParlist,pdaParlist),
+                list(pdaParlist,pdaParlist) )
+pdaList = pda.fd(xfdlist, bwtlist)
+
+
+save.image('fdanalysis.Rdata')
+
+# 其他函数数据分析包的进一步学习 ---------------------------------------------------------
+#install.packages('funcy') # function cluster algorithm
+library(funcy)
+library(help = 'funcy') # pacakges can handle irregular fdata
+set.seed(2005) # set random seed
+ds <- sampleFuncy(obsNr=100, k=6, timeNr=20, reg=TRUE)
+Data(ds)
+class(ds)
+ds@clusters # obtain true cluster result, which equal to 
+Cluster(ds)
+ds@reg # look whether is regular
+ds@data # obtain functional data, which is equal to 
+Data(ds)
+##Format dataset to Format1, that is matrix
+newdat <-formatFuncy(data=Data(ds), format="Format1")
+newdat
+class(newdat)
+##Back to matrix out of Format1
+newdat2 <- formatFuncy(newdat, format="Format2")
+class(newdat2)
+##To Format3
+newdat3 <- formatFuncy(newdat, format="Format3")
+class(newdat3)
+
+##Generate irregular dataset
+set.seed(2005)
+ds <- sampleFuncy(obsNr=100, k=5, timeNrMin=5, timeNrMax=10, reg=FALSE)
+mydat <- Data(ds)
+head(mydat)
+res <- formatFuncy(Data(ds), format="Format3", reg=FALSE)
+res
+Yin <- res$Yin
+Tin <- res$Tin
+res$isobs
+res$N
+res$t_all
+##Back to Format1
+formatFuncy(data=res, format="Format1", reg=FALSE)
+
+# fda.usc包的学习 -------------------------------------------------------------
+
+
+#install.packages('PACE')
+#install.packages('fda.usc')
+library(fda.usc)
+library(help ='fda.usc')
+data("tecator")
+class(tecator) # look class of object
+absorp <- tecator$absorp.fdata 
+class(absorp)
+str(absorp) # look detail about object
+y <- tecator$y
+head(y)
+names(tecator) # obtain list each component names
+Fat20 <- ifelse(tecator$y$Fat < 20, 0, 1) * 2 + 2
+plot(tecator$absorp.fdata, col = Fat20)
+absorp.d1 <- fdata.deriv(absorp, nderiv = 1)
+plot(absorp.d1, col = Fat20)
+## transfer fdata to fd object
+class(absorp.fd <- fdata2fd(absorp, type.basis= "fourier", nbasis= 15))
+class(absorp.fdata <- fdata(absorp.fd))
+
+# 2.2. Smoothing ----------------------------------------------------------
+data('phoneme') # 发音数据, each row is an observation, each col is time point
+?phoneme
+str(phoneme)
+learn <- phoneme$learn
+class(learn)
+l <- c(0, 2^seq(-2, 9, length=30)) # 30 lambdas
+nb <- seq(7, 31, by =2) # use bspline as default
+length(nb) # 31*13 gcv matrix
+out0 <- min.basis(learn, lambda=l, numbasis = nb) # select number of basis with GCV
+?min.basis
+out0[[1]]
+plot(out0$fdata.est)
+names(out0$fdata.est)
+out0$fdata.est$names
+out1 <- min.np(learn, type.S = S.NW, par.CV = list(criteria = "GCV"), verbose = T)
+out2 <- min.np(learn, type.S = S.LLR, par.CV = list(criteria = "GCV"), verbose = T)
+out3 <- min.np(learn, type.S = S.KNN, h = 3:25, Ker = Ker.unif, verbose= T)
+?min.np
+class(out1)
+out1$gcv
+plot(out1$fdataobj)
+lines(out1$fdata.est)
+
+# 2.3. Measuring distances ------------------------------------------------
+
+mdist <- metric.lp(learn)
+class(mdist)
+head(mdist)
+data("poblenou")
+nox <- poblenou$nox
+dd <- as.integer(poblenou$df$day.week)
+working <- poblenou$nox[poblenou$df$day.festive == 0 & dd < 6]
+str(working)
+nonworking <- poblenou$nox[poblenou$df$day.festive == 1 | dd > 5]
+# central measure
+plot(func.mean(working), ylim = c(10, 170),
+      main = "Centrality measures in working days")
+legend(x = 11,y = 185, cex = 0.6, box.col = "white", lty = 1:5, col = 1:5,
+           legend = c("mean", "trim.mode", "trim.RP", "median.mode", "median.RP"))
+lines(func.trim.mode(working, trim = 0.15), col = 2, lty =2)
+lines(func.trim.RP(working, trim = 0.15),col = 3,lty = 3)
+lines(func.med.mode(working, trim = 0.15),col = 4,lty = 4)
+lines(func.med.RP(working, trim = 0.15),col = 5, lty = 5)
+# disperse measure
+plot(func.var(working), 
+     main = "Centrality measures in working days")
+legend('topright',cex = 0.6, box.col = "white", lty = 1:5, col = 1:5,
+       legend = c("var", "trimvar.mode", "trimvar.RP", "trimvar.FM", "trimvar.RPD"))
+lines(func.trimvar.mode(working, trim = 0.15), col = 2, lty =2)
+lines(func.trimvar.RP(working, trim = 0.15),col = 3,lty = 3)
+lines(func.trimvar.FM(working, trim = 0.15),col = 4,lty = 4)
+lines(func.trimvar.RPD(working, trim = 0.15),col = 5, lty = 5)
+
+# bootstrap ---------------------------------------------------------------
+
+out.boot1 <- fdata.bootstrap(working, statistic = func.trim.RP, nb = 1000)
+out.boot2 <- fdata.bootstrap(nonworking, statistic = func.trim.RP,
+                                 nb = 1000)
+str(out.boot1)
+plot(out.boot1$statistic)
+
+# outliner detections -----------------------------------------------------
+
+out <- outliers.depth.trim(working, dfunc = depth.FM, nb = 1000,
+                            smo = 0.1, trim = 0.06)
+out2 <- outliers.depth.trim(nonworking, dfunc = depth.FM, nb = 1000,
+                                smo = 0.1, trim = 0.06)
+plot(working, col='gray') # plot original fdata
+lines(working[out$outliers], lty=2,  col='red') # plot outlier sample curves
+plot(nonworking, col='gray')
+lines(nonworking[out2$outliers], lty=2, col='red')
+working[[paste0('arg','vals')]] # use list's component names visit value
+# 3. Functional regression models -----------------------------------------
+# set predictors and response
+ind <- 1:165
+tt <- absorp[["argvals"]]
+y <- tecator$y$Fat[ind] # response
+X <- absorp[ind, ]
+X.d1 <- fdata.deriv(X, nbasis = 19, nderiv = 1)
+X.d2 <- fdata.deriv(X, nbasis = 19, nderiv = 2)
+
+# 3.1. Functional linear model with basis representation: fregre.b --------
+
+rangett <- absorp$rangeval
+basis1 <- create.fourier.basis(rangeval = rangett, nbasis = 5)
+res.basis1 <- fregre.basis(X.d1, y, basis.x = basis1)
+plot(y, res.basis1$fitted.values, main='fitted VS true y',xlab='true y', ylab='fitted y')
+abline(0,1, col=2, lty=2)
+legend('bottomright', pch=c(1,-1),lty = c(-1,2), col = 1:2,legend = c('true fitted', 'y=x'))
+res.basis1$df   
+res.basis1$beta.est
+summary.fregre.fd(res.basis1)
+
+# 3.2. Functional linear model with functional PC basis: fregre.pc --------
+res.pc1 <- fregre.pc(X.d1, y, l = 1:6)
+summary.fregre.fd(res.pc1) 
+res.pc2 <- fregre.pc.cv(X.d2, y, kmax = 7)
+res.pc2$pc.opt
+res.pc2$MSC
+fregre.pls(X.d1, y, l = 1:5)
+fregre.bootstrap(res.basis1, nb = 1000, kmax.fix = TRUE, alpha = 0.999)
+fregre.bootstrap(res.pc1, nb = 1000, kmax.fix = TRUE, alpha = 0.999)
+fregre.bootstrap(res.pls1, nb = 1000, kmax.fix = TRUE, alpha = 0.999)
+
+# 3.3. Functional linear model with functional and non-functional  --------
+
+ind <- 1:165
+dataf <- as.data.frame(tecator$y[ind, ])
+newdataf <- as.data.frame(tecator$y[-ind, ])
+ldata <- list(df = dataf, X = X, X.d1 = X.d1, X.d2 = X.d2)
+f2 <- Fat ~ Water + X.d2
+basis.x1 <- list(X.d2 = basis1)
+basis2 <- create.bspline.basis(rangeval = rangett, nbasis = 5)
+basis.b1 <- list(X.d2 = basis2)
+res.lm2 <- fregre.lm(f2, ldata, basis.x = basis.x1, basis.b = basis.b1)
+plot(res.lm2)
+
+
+# 3.4. Non-parametric functional regression model: fregre.np() ------------
+
+res.np <- fregre.np(X.d1,y)
+summary(res.np)
+
+# 3.5. Semi-functional partially linear model: fregre.plm() ---------------
+
+res.plm2 <- fregre.plm( Fat ~ Water + X.d2, ldata)
+
+
+# 3.6. Prediction methods for functional regression model fits ------------
+
+newy <- matrix(tecator$y$Fa[-ind], ncol = 1)
+newX.d1 <- fdata.deriv(absorp[-ind, ], nbasis = 19, nderiv = 1)
+newX.d2 <- fdata.deriv(absorp[-ind, ], nbasis = 19, nderiv = 2)
+res.basis2 <- fregre.basis.cv(X.d2, y, type.basis = "bspline")
+class(res.basis2)
+pred.basis2 <- predict.fregre.fd(res.basis2, newX.d2)
+res.np2 <- fregre.np.cv(X.d1, y, metric = semimetric.deriv)
+class(res.np2)
+pred.np2 <- predict.fregre.fd(res.np2, newX.d1)
+newldata <- list("df" = newdataf, "X.d1" = newX.d1, "X.d2" = newX.d2)
+f1 <- Fat ~ Water + X.d1
+basis.x1 <- list(X.d1 = basis1)
+basis.b1 <- list(X.d1 = basis2)
+res.lm1 <- fregre.lm(f1, ldata, basis.x = basis.x1, basis.b = basis.b1)
+class(res.lm1)
+pred.lm1 <- predict.fregre.lm(res.lm1, newldata)
+res.plm1 <- fregre.plm(f1, ldata)
+pred.plm1 <- predict.fregre.plm(res.plm1, newldata)
+
+# 4. Conclusion -----------------------------------------------------------
+#Generalized functional linear models
+?fregre.glm
+data(tecator)
+x=tecator$absorp.fdata
+y=tecator$y$Fat
+tt=x[["argvals"]]
+dataf=as.data.frame(tecator$y)
+
+nbasis.x=11
+nbasis.b=7
+basis1=create.bspline.basis(rangeval=range(tt),nbasis=nbasis.x)
+basis2=create.bspline.basis(rangeval=range(tt),nbasis=nbasis.b)
+
+f=Fat~Protein+x
+basis.x=list("x"=basis1)
+basis.b=list("x"=basis2)
+ldata=list("df"=dataf,"x"=x)
+res=fregre.glm(f,family=gaussian(),data=ldata,basis.x=basis.x,
+               basis.b=basis.b)
+summary(res)
+# Functional analysis of variance
+?anova.RPm()
+data(phoneme)
+names(phoneme)
+data=as.data.frame(phoneme$learn[["data"]])
+group=phoneme$classlearn
+n=nrow(data)
+group.rand=as.factor(sample(rep(1:3,len=n),n))
+RP=c(2,5,15,30)
+
+#ex 1: real factor and random factor
+m03=data.frame(group,group.rand)
+resul1=anova.RPm(data,~group+group.rand,m03,RP=c(5,30))
+summary.anova(resul1)
+
+#ex 2: real factor with special contrast
+m0=data.frame(group)
+cr5=contr.sum(5)   #each level vs last level
+resul03c1=anova.RPm(data,~group,m0,contrast=list(group=cr5))
+summary.anova(resul03c1)
+
+#ex 3: random factor with special contrast
+m0=data.frame(group.rand)
+cr3=contr.sum(3)   #each level vs last level
+resul03c1=anova.RPm(data,~group.rand,m0,contrast=list(group.rand=cr3))
+summary.anova(resul03c1)
+# Functional supervised classification
+?classif.knn
+data(phoneme)
+mlearn<-phoneme[["learn"]]
+glearn<-phoneme[["classlearn"]]
+
+h=9:19
+out=classif.np(glearn,mlearn,h=h)
+summary.classif(out)
+out.knn <- classif.knn(glearn,mlearn, knn=5)
+summary(out.knn)
+out.ker <- classif.kernel(glearn,mlearn, h= h)
+summary(out.ker)
+#Functional non-supervised classification
+?kmeans.fd
+data(phoneme)
+mlearn<-phoneme$learn[c(1:50,101:150,201:250),]
+
+#Unsupervised classification
+out.fd1=kmeans.fd(mlearn,ncl=3,draw=TRUE)
+out.fd2=kmeans.fd(mlearn,ncl=3,draw=TRUE,par.ini=list(method="exact"))
+
+
+save.image(file='fda.usc.Rdata')

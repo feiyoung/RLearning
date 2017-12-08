@@ -1,0 +1,47 @@
+
+rm(list=ls())
+mingdan<-read.table('E:\\学习\\R处理文本文件\\西财各学院复试名单.txt')
+mingdan <- as.character(mingdan[,1])
+mingdan <- mingdan[grep('统计学院', mingdan)]
+
+
+mingdan<-read.table('E:\\学习\\R处理文本文件\\西财统计学复试名单.txt')
+mingdan2<-as.character(mingdan[,1]) #将读入的文本转化位字符串
+#-----字符串替换函数
+getcontent <- function(s,g){
+substring(s,g,g+attr(g,'match.length')-1) #从s字符串中的第g个字符到第(g+匹配的字符长度-1)个字符进行提取
+                    #实质上，第g个字符到第(g+匹配的字符长度-1)个字符就是我们需要的匹配字符串
+}
+##---------------------------------------------提取学院名
+gregout<-gregexpr('统计学院',mingdan2) 
+school.name<-0
+for(i in 1:dim(mingdan)[1]){ 
+school.name[i]<-getcontent(mingdan2[i],gregout[[i]])
+}
+##----------------------------------------------提取专业名
+gregout <- gregexpr('院[\u4E00-\u9FA5]+',mingdan2)
+zhuanye<-0
+for(i in 1:dim(mingdan)[1]){
+zhuanye[i]<-getcontent(mingdan2[i],gregout[[i]])
+}
+head(zhuanye)
+zhuanye<-sub('院','',zhuanye)
+##提取准考证号
+gregout<-gregexpr('[0-9]+',mingdan2)
+kaohao<-0
+for(i in 1:dim(mingdan)[1]){
+ kaohao[i]<-getcontent(mingdan2[i],gregout[[i]])
+}
+##提取姓名
+gregout<-gregexpr('[0-9][\u4E00-\u9FA5]+',mingdan2)
+xingming<-0
+for(i in 1:dim(mingdan)[1]){
+ xingming[i]<-getcontent(mingdan2[i],gregout[[i]])
+}
+xingming<-sub('[0-9]','',xingming)
+##合成数据框
+kaohao<-as.character(kaohao)
+mingdan.xinxi<-data.frame('学院'=school.name,'专业'=zhuanye,
+     '准考证号'=kaohao,'姓名'=xingming)
+write.csv(mingdan.xinxi,file='西财统计学复试名单.csv',row.names=F)
+

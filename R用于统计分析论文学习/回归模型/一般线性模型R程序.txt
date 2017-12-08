@@ -1,0 +1,165 @@
+fileDir<-'E:\\学习\\R用于统计分析论文学习\\一般线性回归模型\\CarData.txt'
+CarData<-read.table(file=fileDir,header=TRUE)
+CarData$ModelYear<-as.factor(CarData$ModelYear)
+pairs(~MPG+weight+displacement+horsepower,data=CarData) #画出指定4各变量间的散点图
+#--------------------------------------------------------------------------------
+##########(1)建立线性回归经验方程
+Fit<-lm(MPG~weight+displacement+horsepower,data=CarData)
+#############浏览回归分析结果
+coefficients(Fit) #查看线性回归系数
+summary(Fit) #模型汇总 #（2）线性回归方程的显著性检验和和回归系数的显著性检验
+confint(Fit) #置信区间 
+
+
+##########剔除对被解释变量无显著性影响的解释变量，重新建立二元回归经验方程
+Fit<-lm(MPG~weight+horsepower,data=CarData)
+summary(Fit)
+FitMPG<-predict(Fit,CarData,type="response")    ##利用线性回归模型做预测
+plot(CarData$weight,CarData$MPG,pch=1,xlab="自重",ylab="MPG")
+points(CarData$weight,FitMPG,pch=10,col=2)
+legend("topright",c("实际值","拟合值"),pch=c(1,10),col=c(1,2)) #对每条曲线添加注解
+
+############拟合值与残差值
+fitted(Fit)
+residuals(Fit)
+#######绘制残差图
+par(mfrow=c(2,2))
+plot(Fit) #利用图像大致回归诊断误差项是否满足三条假定（即高斯-马尔科夫假定）
+
+##########重新建立对数-水平的二元回归经验方程（box-cox变换）
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+summary(Fit)
+par(mfrow=c(2,2))
+plot(Fit)  #也是大致诊断
+#######################################################################################################
+##########残差满足高斯-马尔科夫假定的其他诊断方法
+car::durbinWatsonTest(Fit)    ##Durbin-Watson独立性检验,主要用于时间序列数据的回归建模，对本例截面数据不太适合
+summary(car::powerTransform(CarData$MPG))   #计算最佳Box-Cox变换，使被解释变量达到正态化，正态性处理
+car::spreadLevelPlot(Fit)   #等方差性假定图形
+car::ncvTest(Fit)   #等方差性假定检验,原假设是等方差。
+car::crPlots(Fit)   ####被解释变量和解释变量的线性相关性判断
+#############################################################################################
+##（3）回归诊断异常观测点
+###########1)定义绘制杠杆值的用户自定义函数
+LeveragePlot<-function(fit){
+ Np<-length(coefficients(fit))-1
+ N<-length(fitted(fit))
+ plot(hatvalues(fit),main="观测点的杠杆值序列图",ylab="杠杆值",xlab="观测编号")
+ abline(2*(Np+1)/N,0,col="red",lty=4)
+ abline(3*(Np+1)/N,0,col="green4",lty=2)
+ legend('topright',c('平均杠杆值的两倍','平均杠杆值的三倍'),lty=c(4,2),col=c('red','green4'))
+ identify(1:N,hatvalues(fit),names(hatvalues(fit))) #图形交互
+ }
+LeveragePlot(Fit)
+
+###############2)探测离群点
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+rstudent(Fit)
+car::outlierTest(Fit) #其原假设是离群点，看Bonferonni p值
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData[-388,])
+car::outlierTest(Fit)
+
+#######################3)探测强影响点
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+par(mfrow=c(2,1))
+plot(cooks.distance(Fit),main="Cook's distance",cex=0.5)      #获得Cook距离
+Np<-length(coefficients(Fit))-1
+N<-length(fitted(Fit))
+CutLevel<-4/(N-Np-1)
+plot(Fit,which=4) #此处本来绘制6副图，但通过which=4表示只显示第4副图。
+abline(CutLevel,0,lty=2,col="red") #斜率为0，截距为CutLevel
+
+library("car")
+avPlots(Fit,ask=FALSE,onepage=TRUE,id.method="identify")#onepage=TRUE表示所有图形集成在一幅图形上，
+                                                        #id.method="identify"表示对图形交互操作
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+Fit0<-lm(log(MPG)~weight+horsepower,data=CarData[-117,])
+
+##############异常观测点的综合展示
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+influencePlot(Fit,id.method="identify",main="异常观测点的可视化")
+
+####################################################################################################3
+##########(5)多重共线性检验
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+library("car")
+vif(Fit) #诊断多重共线性,方差膨胀因子>10表示有多重共线性
+##################################################################################################
+###########1)建模策略：拟合优度
+Fit1<-lm(log(MPG)~weight+horsepower,data=CarData)
+Fit2<-lm(log(MPG)~weight+horsepower+displacement,data=CarData)
+summary(Fit1)
+summary(Fit2)
+anova(Fit1,Fit2)
+
+###########2)建模策略：AIC（Akaike information criterion）赤池信息量准则
+Fit1<-lm(log(MPG)~weight+horsepower,data=CarData)
+Fit2<-lm(log(MPG)~weight+horsepower+displacement,data=CarData)
+AIC(Fit1,Fit2)#计算两个模型的赤池信息量准则。
+BIC(Fit1,Fit2) #计算两个模型的贝叶斯信息量准则。
+
+#######不同解释变量筛选策略下的AIC
+Fit<-lm(log(MPG)~weight+horsepower+displacement+cylinders+acceleration,data=CarData)
+library("MASS")
+stepAIC(Fit,direction="backward")
+
+
+###############3)全子集回归
+library("leaps")
+leapsFit<-regsubsets(log(MPG)~weight+horsepower+displacement+cylinders+acceleration,data=CarData,nbest=2)
+summary(leapsFit)
+coef(leapsFit, c(3,5))
+
+####全子集回归的可视化评价
+plot(leapsFit,scale="bic")
+plot(leapsFit,scale="adjr2")
+
+library("car")
+subsets(leapsFit,statistic="cp",main="全子集回归模型评价图")
+abline(1,1,lty=2,col="red")
+###########################################################################################################
+############(7)N折交叉验证
+install.packages("bootstrap")
+library("bootstrap")
+##自定义k折交叉验证函数
+MyNcross<-function(fit,k){
+X<-as.matrix(fit$model[,2:ncol(fit$model)])
+Y<-fit$model[,1]
+theta.fit<-function(X,Y) {lsfit(X,Y)}
+theta.predict<-function(fit,X){cbind(1,X)%*%fit$coef}
+NcrossR<-crossval(x=X,y=Y,theta.fit(X,Y),theta.predict(fit,X),ngroup=k) #k折交叉验证
+}
+Fit<-lm(log(MPG)~weight+horsepower,data=CarData)
+set.seed(12345)
+Result<-MyNcross(Fit,6)
+(R2<-cor(Fit$model[,1],Fit$fitted.values)^2)
+(R2CV<-cor(Fit$model[,1],Result$cv.fit)^2)
+
+###############自助法验证
+BootLm<-function(DataSet,indices,formula){
+ ReSample<-DataSet[indices,]
+ fit<-lm(formula,data=ReSample)
+ R2<-cor(fit$model[,1],fit$fitted.values)^2
+ return(R2)
+}
+library("boot")
+set.seed(12345)
+BootObject<-boot(data=CarData,statistic=BootLm,R=100,formula=log(MPG)~weight+horsepower)
+BootObject$t0
+print(BootObject)
+mean(BootObject$t)
+plot(BootObject)
+boot.ci(BootObject,conf=0.95,type=c("perc"),index=1)
+
+###################回归方程的置换检验
+library("lmPerm")
+set.seed(12345)
+Fit<-lmp(log(MPG)~weight+horsepower,data=CarData)
+summary(Fit)
+
+#####################带虚拟变量的线性回归
+CarData$ModelYear<-as.factor(CarData$ModelYear)
+Fit<-lm(log(MPG)~weight+horsepower+ModelYear,data=CarData)
+summary(Fit)
+
+

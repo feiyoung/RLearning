@@ -1,0 +1,9 @@
+## tune `rpart' for regression, using 10-fold cross validation (default)
+  data(mtcars)
+  obj3 <- tune.rpart(mpg~., data = mtcars, minsplit = c(5,10,15))
+#»òÕß
+ # obj3 <- tune(rpart, mpg~., data = mtcars, ranges=list(minsplit=c(5,10,15)))
+  summary(obj3)
+  plot(obj3)
+#----Ô¤²â»Ø¹é
+predict(obj3$best.model, mtcars[,-1])

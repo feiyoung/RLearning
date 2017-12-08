@@ -1,0 +1,42 @@
+##双因子方差分析
+
+#没有交互作用的情况
+juice<-data.frame(
+X = c(0.05, 0.46, 0.12, 0.16, 0.84, 1.30, 0.08, 0.38, 0.4,
+0.10, 0.92, 1.57, 0.11, 0.43, 0.05, 0.10, 0.94, 1.10,
+0.11, 0.44, 0.08, 0.03, 0.93, 1.15),
+A = gl(4, 6),
+B = gl(6, 1, 24)
+)
+juice.aov<-aov(X~A+B, data=juice)
+summary(juice.aov)
+
+#齐性检验
+bartlett.test(X~A, data=juice) # 对因素A
+bartlett.test(X~B, data=juice) #对因素B
+
+#有交互作用的情况
+rats<-data.frame(
+Time=c(0.31, 0.45, 0.46, 0.43, 0.82, 1.10, 0.88, 0.72, 0.43, 0.45,
+0.63, 0.76, 0.45, 0.71, 0.66, 0.62, 0.38, 0.29, 0.40, 0.23,
+0.92, 0.61, 0.49, 1.24, 0.44, 0.35, 0.31, 0.40, 0.56, 1.02,
+0.71, 0.38, 0.22, 0.21, 0.18, 0.23, 0.30, 0.37, 0.38, 0.29,
+0.23, 0.25, 0.24, 0.22, 0.30, 0.36, 0.31, 0.33),
+Toxicant=gl(3, 16, 48, labels = c("I", "II", "III")),
+Cure=gl(4, 4, 48, labels = c("A", "B", "C", "D"))
+)
+op<-par(mfrow=c(1, 2))
+plot(Time~Toxicant+Cure, data=rats)
+#下面再用函数interaction.plot( )作出交互效应图, 以考查因素之间交互作用是否存在, R程序为
+with(rats,interaction.plot(Toxicant, Cure, Time, trace.label="Cure"))
+with(rats,interaction.plot(Cure, Toxicant, Time, trace.label="Toxicant"))
+#用方差分析函数aov( )对此进行确认有无交互作用
+rats.aov<-aov(Time~Toxicant*Cure, data=rats)
+summary(rats.aov)
+#再 进 一 步 使 用 前 面 的Bartlett和Levene两 种 方 法 检 验 因
+#素Toxicant和Cure下的数据是否满足方差齐性的要求, R程序如下.
+ library(car)
+levene.test(rats$Time, rats$Toxicant)
+levene.test(rats$Time, rats$Cure)
+ bartlett.test(Time~Toxicant, data=rats)
+bartlett.test(Time~Cure, data=rats)

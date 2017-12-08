@@ -1,0 +1,44 @@
+
+###################Logistic回归
+#对于顾客软饮料购买意向数据，建立购买意向与除品牌之外的其他因素的logistic回归模型
+#以分析哪些因素是导致顾客做出不同购买决策的重要因素
+fileDir<-"E:\\学习\\R用于统计分析论文学习\\广义线性模型\\SoftDrink.txt"
+SoftDrink<-read.table(file=fileDir,header=TRUE)
+SoftDrink$Choice<-as.factor(SoftDrink$Choice) #转化为因子变量
+Fit<-glm(Choice~.-Brand,data=SoftDrink,family=binomial(link="logit"))#建立logistic回归模型
+anova(Fit,test="Chisq") #方差分析，并进行卡方检验
+summary(Fit) #模型汇总
+Fit<-glm(Choice~.-Brand-Price-Fat-Age-Vitamin,data=SoftDrink,family=binomial(link="logit")) #进一步优化
+summary(Fit) #再汇总
+coef(Fit) #查看系数
+exp(coef(Fit)) #计算优势比
+
+boot::glm.diag.plots(Fit)    #GLM的图形诊断
+
+#############混淆矩阵的正确率作为拟合优度的测度
+Fit<-glm(Choice~.-Brand-Price-Fat-Age-Vitamin,data=SoftDrink,family=binomial(link="logit"))
+BuyProb<-predict(Fit,SoftDrink,type="response") #计算预测概率
+BuyOrNot<-ifelse(BuyProb>0.5,1,0)  #转化为预测值
+(ConfuseMatrix<-table(SoftDrink$Choice,BuyOrNot)) #构造混淆矩阵
+prop.table(ConfuseMatrix,1)*100  #正确率，越接近1越好
+
+#######McFaddenR^2 利用McFadden的伪R^2统计量作为拟合优度的测度
+Fit<-glm(Choice~.-Brand-Price-Fat-Age-Vitamin,data=SoftDrink,family=binomial(link="logit"))
+anova(Fit) #方差分析
+(McR2<-1-anova(Fit)[3,4]/anova(Fit)[1,4]) #计算伪R^2，越接近1越好
+
+###############Logistic回归的过散布诊断
+SoftDrink<-read.table(file=fileDir,header=TRUE)
+SoftDrink$Choice<-as.factor(SoftDrink$Choice)
+Fit<-glm(Choice~.-Brand-Price-Fat-Age-Vitamin,data=SoftDrink,family=binomial(link="logit"))
+summary(Fit)$dispersion
+Fit$deviance/Fit$df.residual#计算Phi，大于1则表示过散布。
+
+install.packages("qcc")#这是另一种诊断过散布的方法
+library("qcc")
+Count.01<-tapply(SoftDrink$Choice,INDEX=SoftDrink$Choice,FUN=length) #计算0和1的观测个数 
+qcc.overdispersion.test(c(0,1),type="binomial",size=Count.01)#过散布检验，其原假设是散布系数为1.
+
+Fit0<-glm(Choice~.-Brand-Price-Fat-Age-Vitamin,data=SoftDrink,family=quasibinomial(link="logit"))
+pchisq(summary(Fit0)$dispersion*Fit0$df.residual,Fit0$df.residual,lower.tail=FALSE) #计算1-卡布的分布函数值
+

@@ -1,0 +1,14 @@
+#try regression model on two dimensions
+
+# create data
+x <- seq(0.1, 5, by = 0.05)
+y <- log(x) + rnorm(x, sd = 0.2)
+
+# estimate model and predict input values
+m <- svm(x, y) #建立epslon回归向量机，目标变量为数值型时进行回归训练；为因子时进行分类训练
+new <- predict(m, x)
+
+# visualize
+plot(x, y)
+points(x, log(x), col = 2)
+points(x, new, col = 4)

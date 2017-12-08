@@ -1,0 +1,55 @@
+#--------------------随机游走
+set.seed(1234)
+n <- 100
+x <- cumsum(rnorm(n))
+plot(x, type='l')
+
+#-------------------布朗运动
+y <-cumsum(rnorm(n))
+plot(x, y, type='l')
+
+#------------------伯努利大数定理的实验证明
+Bernoulli <- function(m=500){
+ f <- rep(0, m) #初始化实验样本
+ p <- rep(0, m) #初始化概率
+ n <- 1
+ f[1] <- sample(c(0,1), n, rep=T) #进行第一次实验
+ p[1] <- f[1]/1 #求该次实验成功的概率
+ for(n in 2:m)
+ {
+   f[n] <- f[n-1] +sample(c(0,1), n, rep=T) #重复实验
+   p[n] <- f[n] /n
+  }
+ plot(p, type='l', ylim=c(0,1));abline(h=0.5) #可视化概率的收敛图
+}
+Bernoulli(100)
+Bernoulli(1000)
+
+#-------------------计算标准正态分布下在[-1, 1]上的概率
+plot(seq(-3, 3, 0.1),dnorm(seq(-3, 3, 0.1)), type='l', xlab='x', ylab=expression(phi(x)))#绘制正态分布密度曲线
+text(-3, 0.3, adj=c(0,1), expression(phi(x)==frac(1,sqrt(2*pi))~e^-frac(x^2,2))) #图上添加公式
+abline(v=c(-1,1), lty=3);#添加竖直线
+text(0, 0.1, expression(integral(phi(x)*dx, -1, 1)%~~% 0.68)) #添加积分公式
+#--开始模拟
+g <-function(x) {1/sqrt(2*pi) * exp(-x^2/2)}
+I <- function(n, a, b, g){
+ x <- runif(n)
+ sum((b-a) *　g(a + (b-a)* x))/n
+}
+I(10000, -1, 1, g) #计算积分
+
+#-------------------计算另一个无法直接积分的函数
+h <- function(x) {sin(x^2 + x^3) + cos(1/2+x^0.5)} #被积分函数
+par(mar= c(2,2,2,1), mfrow=c(2,1), cex=0.75)
+curve(h, 0,1, xlab='Function',ylab='',lwd=2)
+integrate(h, 0,1) #利用函数integrate求积分
+#----开始模拟
+m <- 10000
+x <- h(runif(10000))
+estInt <- cumsum(x)/(1:m)
+estInt[m] #利用动态模拟求积分
+estErr <- sqrt(cumsum(x-estInt)^2)/(1:10^4)
+plot(estInt, type='l');
+lines(estInt+2*estErr, col=3)
+lines(estInt-2*estErr, col=3) #绘出置信带
+

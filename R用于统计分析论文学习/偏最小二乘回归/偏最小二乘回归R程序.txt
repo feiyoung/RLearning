@@ -1,0 +1,16 @@
+library(pls)
+data(yarn)
+Y<-as.matrix(yarn['density']) #设置因变量变量组,必须为矩阵
+X<-as.matrix(yarn['NIR']) #设置自变量变量组
+##选定6个成分(默认使用所有主成分回归)，留一验证LOO，使用jackknife法估计回归系数方差( 为后面的显著性检验做准备)
+yarn.pls <- plsr(Y~X,ncomp=6, validation = "LOO",jackknife=T)
+summary(yarn.pls,what='all')#模型汇总
+coef(yarn.pls) #回归系数
+validationplot(yarn.pls)#画出 PLS 模型在不同主成分数下对应的由留一交叉验证得到的RMSEP
+##画出最终模型的预测效果图,纵坐标为各因变量的预测值， 横坐标为各因变量的实际测量值; 
+##散点集中分布在主对角线上则说明预测效果很好
+predplot(yarn.pls)
+jack.test(yarn.pls)#对回归系数做显著性检验
+
+##可以使用 coef( ) 函数得到回归系数， scores( ) 得到得分矩阵， loadings( ) 得到载荷矩
+##阵， predict( ) 得到对应样本的预测值， 以及 plot( ) 函数将结果以图的形式展现

@@ -1,0 +1,102 @@
+#----------------------探索性因子分析EFA(experimental factor analysis)
+options(digits=2)   #保留两位小数
+covariances<-ability.cov$cov   
+correlations<-cov2cor(covariances)  #从协方差矩阵转化为相关系数矩阵。 
+correlations 
+library(psych) 
+KMO(correlations) #KMO检验通过
+cortest.bartlett(correlations) #球形检验通过
+
+#------判断需提取的公共因子数用函数fa.parallel    
+fa.parallel(correlations,n.obs=112,fa="fa",n.iter=100,main="基于平行分析的碎石图") #fa=both表示既显示主成分的个数，又显示因子的个数
+
+#-----未旋转的主轴迭代因子法pa，提取公共因子可使用fa（）函数来提取因子
+fa<-fa(correlations,nfactors=2,rotate="none",fm="pa")  
+#---------此处用fm=pa来估计载荷因子。还有"minres" （最小残#差法）、"wls"（带权最小平方法）、"gls"（广义带权最小平方法）、    #---------"pa" （主轴因子法）、"ml"（极大似然法）、fa  
+#-----因子旋转，用正交旋转提取因子
+fa.varimax<-fa(correlations,nfactors=2,rotate="varimax",fm="pa")   
+fa.varimax 
+factor.plot(fa.varimax,labels=rownames(fa.varimax$loadings))#绘制正交结果图
+#-----用斜交旋转提取因子(根据研究的目的确定旋转的方法)
+fa.promax<-fa(correlations,nfactors=2,rotate="promax",fm="pa")   
+fa.promax
+
+#-----使用factor.plot（）或fa.diagram（）函数，可绘制正交或斜交结果的图形
+factor.plot(fa.promax,labels=rownames(fa.promax$loadings))
+fa.diagram(fa.promax,simple=TRUE) 
+#-----因子得分系数（只有原数据才能计算因子得分，fa函数使用回归方法估计因子得分）
+fa.promax$weights
+
+
+#-------------------- -------------------    自己进行实例分析
+#--------------------例一：本例来自刘肇军，林海明《初始因子与旋转因子的异同》【J】
+#----数据载入
+X1<-c(92.32,109.41,60.01,29.89,58.95,76.04,39.43,13.96)
+X2<-c(116.97,130.01,131.38,99.96,106.58,117.99,100.34,100.19)
+X3<-c(-29.95,-21.76,-20.35,-64.44,-55.62,-51.94,-53.8,-86.32)
+X4<-c(2.9,2.83,2.22,1.19,2.08,2.1,2.03,0.55)
+X5<-c(15.49,48.71,5.27,-1.11,1.9,13.72,0.15,1.04)
+X6<-c(983214,1575552,592871,130144,353705,518535,405007,58415)
+X7<-c(0.9333,0.4667,1,0,1,0.9633,1,0)
+qysj<-data.frame(X1,X2,X3,X4,X5,X6,X7)
+rownames(qysj)<-c("广州一厂","广州二厂","韶关厂","南雄厂","梅州厂","南海厂","湛江厂","廉江厂")
+qysj  
+cor(qysj) #查看原变量间是否存在较强的相关性
+#-----输出结果
+     X1   X2   X3   X4    X5   X6    X7
+X1 1.00 0.78 0.82 0.92 0.835 0.92 0.465
+X2 0.78 1.00 0.88 0.70 0.688 0.76 0.390
+X3 0.82 0.88 1.00 0.89 0.611 0.81 0.552
+X4 0.92 0.70 0.89 1.00 0.630 0.84 0.694
+X5 0.83 0.69 0.61 0.63 1.000 0.93 0.012
+X6 0.92 0.76 0.81 0.84 0.934 1.00 0.262  #相关性如此之强，为甚么KMO检验通不过呢？我发现了！
+X7 0.47 0.39 0.55 0.69 0.012 0.26 1.000  #原来是X7和其他变量之间相关性不是很强，影响了偏相关系数检验
+
+#----因子分析
+library(psych)
+qysj1<-scale(qysj)
+KMO(qysj1) #KMO检验未通过（已找到原因）
+KMO(qysj1[,-7]) #只对前6个变量做因子分析(检验通过)
+cortest.bartlett(qysj1[,-7]) #球形检验通过
+porp.qysj <- qysj1[,-7]
+fa.parallel(porp.qysj,fa='fa',n.iter=100,main="Scree plots with paralle analysis")#利用平行分析判断因子个数。
+fa.qysj <- fa(porp.qysj,nfactor=1,score=T,rotate='none',fm='minres',scores=T) #一个因子就不用旋转了
+#-----------------利用初始因子分析对各个工厂进行综合评价
+Scores <- fa.qysj$score
+(paiming <- data.frame(score=sort(Scores, decreasing=T),qiye=rownames(Scores)[order(Scores, decreasing=T)]))#利用因子得分排名
+(paiming2 <-data.frame(score=sort(qysj1[,7], decreasing=T),qiye=rownames(Scores)[order(qysj1[,7], decreasing=T)])) #利用第7个变量排名
+#--------------利用factanal函数进行因子分析
+qysj.cor<-cor(qysj)
+library(psych) 
+fa.parallel(qysj.cor,fa='fa',n.obs=8,n.iter=100,main="Scree plots with paralle analysis")#利用平行分析判断因子个数。
+#Parallel analysis suggests that the number of factors = 1  and the number of components =  1 
+fa.an<-factanal(qysj,factors=1,rotation='varimax');fa.an
+qysj.sd<-scale(qysj);qysj.sd
+scores.cor<-qysj.sd%*%fa.an$loadings;scores.cor#计算因子得分系数
+
+#C1<-c(0.872,0.783,0.734,0.695,0.975,0.961,0.094);
+#C1<-c(0.965,0.872,0.929,0.939,0.812,0.940,0.520)
+
+#-----------------------------------例二：本例来自梁美社《大学生综合素质测评的因子分析模型》
+u1<-c(94.47,90.95,88.42,82.32,79.32,82.74,77.95,80.26,79.68,80.37)
+u2<-c(97,93,95,96,88,97,89,82,94,83)
+u3<-c(84,79,74,85,79,74,83,74,76,75)
+u4<-c(78,77,73,78,78,64,73,69,80,78)
+u5<-c(4.30,4.10,3.40,2.90,3.55,2.80,3.30,2.50,2.15,2.00)
+xszb<-data.frame(u1,u2,u3,u4,u5)
+rownames(xszb)<-paste('样本',1:10,sep='')
+xszb1<-apply(xszb,2,function(x) (x-min(x))/(max(x)-min(x)));xszb.jzwlgh#极差正规化进行无量纲化处理
+cor(xszb1)
+KMO(xszb1) #KMO检验未通过
+cortest.bartlett(xszb1) #球形检验也未通过，故不适合因子分析。
+KMO(xszb1[,-c(3,4)]) #剔除后检验通过，如果是用于聚类分析和回归分析的话，就可以这样对部分变量进行因子分析。
+cortest.bartlett(xszb1[,-c(3,4)])
+
+xszb.cor<-cor(xszb.jzwlgh)
+require(psych)
+fa.parallel(xszb1,fa="fa",n.iter=100,main="平行分析碎石图")
+#fa.parallel(xszb1,fa="both",n.iter=100,main="平行分析碎石图")
+fa.varimax<-fa(xszb1,nfactors=1,rotate="varimax",fm="pa",scores="tenBerge")
+score<-fa.varimax$scores 
+data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(xszb)[1],"名",sep=""),defen=sort(score,decreasing=T))
+  

@@ -1,0 +1,61 @@
+#################################随机森林模型用于判别分类#############################
+## 有教师监督学的分类Classification:
+sTime<-function(x=71){
+require(randomForest)
+data(iris);
+set.seed(x); #设置随机数种子
+iris.rf <- randomForest(Species ~ ., data=iris, importance=TRUE,proximity=TRUE)}
+system.time(sTime()) #计算该函数的运行时间
+
+print(iris.rf)
+###########################显示输出结果################################
+Call:
+ randomForest(formula = Species ~ ., data = iris, importance = TRUE,      proximity = TRUE) 
+               Type of random forest: classification
+                     Number of trees: 500
+No. of variables tried at each split: 2
+
+        OOB estimate of  error rate: 4%
+Confusion matrix:
+           setosa versicolor virginica class.error
+setosa         50          0         0        0.00
+versicolor      0         47         3        0.06 #3/50=0.06
+virginica       0          3        47        0.06 
+
+#########################对新样品进行分类###################################
+newdata<-iris[141:150,1:4] 
+predict(iris.rf,newdata)
+
+## Look at variable importance:
+round(importance(iris.rf), 2)
+## Do MDS on 1 - proximity:
+iris.mds <- cmdscale(1 - iris.rf$proximity, eig=TRUE)
+op <- par(pty="s")
+pairs(cbind(iris[,1:4], iris.mds$points), cex=0.6, gap=0,
+      col=c("red", "green", "blue")[as.numeric(iris$Species)],
+      main="Iris Data: Predictors and MDS of Proximity Based on RandomForest")
+par(op)
+print(iris.mds$GOF)
+
+####################################k折交叉验证#######################################
+##定义用于交叉验证的随机森林函数cv.rf，含有3个参数，参数1为公式、参数2为训练样本、参数3为检验样本
+cv.rf<-function(form,train,test,...){
+m<-randomForest(form,train,importance = TRUE,proximity = TRUE)#建立随机森林分类模型
+p<-predict(m,test) #对测验样本进行分类
+sum(p==resp(form,test))/length(p)} #计算正确分类率
+##进行重复8次的10折交叉验证，下面函数含3个参数，参数1为公式、数据、类别变量名，参数2为自定义的函数cv.rf的变异体
+#参数3是交叉验证的重复次数、数据组数和随机数种子
+require(DMwR)
+res<-experimentalComparison(c(dataset(Species~.,iris,'Species')),c(variants('cv.rf')),cvSettings(8,10,1234))
+summary(res)
+
+###########################显示输出结果################################
+#从结果可以看出平均正确分类率达到0.95416667，最大正确率达1.00000000，经k折交叉验证，说明该模型可靠稳定。
+        *Learner: cv.rf.v1 
+              [,1]
+avg     0.95416667
+std     0.05572057
+min     0.73333333
+max     1.00000000
+invalid 0.00000000
+

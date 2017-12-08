@@ -1,0 +1,17 @@
+###############关联向量机-回归################
+######回归可以用于插值、预测#######
+# 建立样本数据（create data）
+x <- seq(-20,20,0.1)
+y <- sin(x)/x + rnorm(401,sd=0.05)
+
+# 训练关联向量机（train relevance vector machine)
+foo <- rvm(x, y) #建立关联向量机模型
+foo
+# 显示输出关联向量机（print relevance vectors）
+alpha(foo)
+RVindex(foo)
+
+# 预测并作图（predict and plot）
+ytest <- predict(foo, x)
+plot(x, y, type ="l") #原数据图形
+lines(x, ytest, col="red") #预测数据图形

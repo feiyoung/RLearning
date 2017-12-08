@@ -1,0 +1,11 @@
+##载入数据
+require(rpart)
+data(airquality)
+##建立决策树回归模型
+Ctl<-rpart.control(minsplit=2,maxcompete=4,xval=10,maxdepth=10,cp=0) #用户自己设置决策树的控制参数
+set.seed(12345) #设置随机种子，使交叉验证剪枝法的结果可以重现
+TreeFit1<-rpart(Ozone ~ .,data=airquality,method="poisson",parms=list(split="gini"),control=Ctl) #建立分类树模型,异质性指标用Gini系数
+TreeFit1<-rpart(Purchase~.,data=BuyOrNot,method="poisson",parms=list(split="imformation"),control=Ctl) #异质性指标用信息熵建立分类决策树模型
+rpart.plot(TreeFit1,type=4,branch=1,extra=2) #可视化分类树,cp=0的树非常复杂，鲁棒性不强，不易推广
+printcp(TreeFit1) #显示复杂度参数列表
+plotcp(TreeFit1) #可视化复杂度参数

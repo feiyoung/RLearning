@@ -1,0 +1,37 @@
+#单因素方差分析
+X<-c(25.6, 22.2, 28.0, 29.8, 24.4, 30.0, 29.0, 27.5, 25.0, 27.7,
+23.0, 32.2, 28.8, 28.0, 31.5, 25.9, 20.6, 21.2, 22.0, 21.2)
+A<-factor(rep(1:5, each=4))
+miscellany<-data.frame(X, A)
+aov.mis<-aov(X~A, data=miscellany)
+ summary(aov.mis)
+plot(miscellany$X~miscellany$A)
+# 从图形上也可以看出, 5种除杂方法产生的除杂量有显著差异, 特别
+#第5种与前面的4种, 而方法1与3, 方法2与4的差异不明显.
+
+###进一步进行多重比较。说明: 多重t检验方法使用方便, 但当多次重复使用t检验时会增大犯第一类错
+###误的概率, 从而使得“有显著差异”的结论不一定可靠, 所以在进行较多次重复
+###比较时, 我们要对p值进行调整.
+pairwise.t.test(X, A, p.adjust.method="none")#p值不做调整。
+pairwise.t.test(X, A, p.adjust.method="holm")#按这种方法调整p值。
+ pairwise.t.test(X, A, p.adjust.method="bonferroni")
+#当比较次数较多时, Bonferroni方法的效果较好, 所以在作多重t检验时常采用Bonferroni法对p进行调整. 
+
+##计算同时置信区间
+sales<-data.frame(
+X=c(23, 19, 21, 13, 24, 25, 28, 27, 20, 18,
+19, 15, 22, 25, 26, 23, 24, 23, 26, 27),
+A=factor(rep(1:5, c(4, 4, 4, 4, 4)))
+)
+summary(aov(X~A, sales)）
+TukeyHSD(aov(X~A, sales))
+#可以看出, 共有10个两两比较的结果, A3 A1、 A4 A2、 A5 A2和A5 A4的
+#差异是显著的, 其它两两比较的结果均是不显著的. 
+
+##方差齐性检验
+#法1：
+ bartlett.test(X~A, data=sales) #其原假设是方差无显著性差异
+#法2：
+ library(car)
+ leveneTest(sales$X, sales$A)#levene.test(sales$X, sales$A)已经过时，所以用leveneTest
+

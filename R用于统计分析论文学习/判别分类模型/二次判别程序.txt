@@ -1,0 +1,64 @@
+#--------------------------二次判别分析-----------------------------#
+
+#-----------------------------------例一
+tr <- sample(1:50, 25)
+train <- rbind(iris3[tr,,1], iris3[tr,,2], iris3[tr,,3])
+test <- rbind(iris3[-tr,,1], iris3[-tr,,2], iris3[-tr,,3])
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+#------建立二次判别分析模型
+z <- qda(train, cl)
+#------对新样本分类
+predict(z,test)$class
+
+
+#--------------------------------------------例二
+Data <-read.csv('新建 Microsoft Excel 工作表 (2).csv',header=T)
+xxdata <- Data[,-1]
+clas <- Data[,1]
+z <- qda(xxdata[,2:3], clas) #这个就可以
+
+z <- qda(xxdata, clas) #变量维数太高，显著大于样本数，导致报错
+z <- qda(sclass~.,data=Data) #这个和上面语句是一样的
+
+#-------------------------------------------例三
+library(MASS)
+wdata<-read.table("11点气象数据.csv",header=T,sep=",")
+y=wdata[x0,13]
+x=wdata[x0,12]
+plot(x,y)
+qd=qda(z~x+y)
+s=predict(qd) #二次判别坏点
+newG=s$class
+cbind(z,newG)
+tab=table(z,newG)
+sum(diag(prop.table(tab)))
+m<-0
+for(i in 1:23) #剔除坏点
+{
+if(wdata[i,14]==2)
+ {
+ m<-m+1
+ } 
+ if(wdata[i,14]==1)
+ {
+ wdata[i-m,15]<-wdata[i,12]
+ wdata[i-m,16]<-wdata[i,13]
+ } 
+ }
+x1<-seq(1,i-m,by=1)
+plot(wdata[x1,15],wdata[x1,16])
+text(x,y,z,adj=-0.8)
+x<-wdata[x1,15]
+y<-wdata[x1,16]
+discrim.dist(cbind(x,y),as.factor(z),var.equal=T)
+
+
+x1<-x #5次多项式回归（结果:R^2=0.9826）
+x2<-x^2
+x3<-x^3
+x4<-x^4
+x5<-x^5
+lm.5=lm(y~x1+x2+x3+x4+x5)
+summary(lm.5)$coef
+summary(lm.5)$r.sq
+lines(x,fitted(lm.5))

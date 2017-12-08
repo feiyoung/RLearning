@@ -1,0 +1,102 @@
+setwd('C:\\Users\\Administrator\\Desktop\\新建文件夹\\函数数据分析')
+getwd()
+rm(list=ls())
+load('fda.Rdata')
+library(fda)
+
+#-----------------论文数据操作
+
+#--------开始
+library(xlsx)
+fData <- read.xlsx('fdadata2.xlsx', sheetIndex = 1)
+str(fData)
+fData <- t(as.matrix(fData))
+n <- nrow(fData)
+N <- ncol(fData)
+argvals <- seq(0,100, len=nrow(fData) )
+y <- fData
+#  Set up spline basis system
+nbasis = n + 2
+basisobj = create.bspline.basis(c(0,100),nbasis)
+#  Set up roughness penalty with smoothing parameter 10^(-5)
+lambda = 10^(-5)
+fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+#  Smooth the data, outputting a list containing various quantities
+smoothlist = smooth.basis(argvals, y, fdParobj)
+xfd = smoothlist$fd   #  the curve smoothing the data
+df  = smoothlist$df   #  the degrees of freedom in the smoothing curve
+gcv = smoothlist$gcv  #  the value of the gcv statistic
+min(gcv)
+#RMSE = sqrt(mean((eval.fd(argvals, xfd) - x)^2))
+#Lcoef =  c(0,(2*pi/diff(Trange))^2,0)
+#harmaccelLfd =  vec2Lfd(Lcoef, Trange)
+#交互绘图，绘出每一条函数曲线，一共50条
+plotfit.fd(y, argvals, xfd)
+#-------------拟合函数曲线时的广义交叉验证选择平滑参数
+loglam =  seq(1,5,0.25)
+nlam =  length(loglam)
+dfsave =  rep(NA,nlam)
+gcvsave =  rep(NA,nlam)
+for (ilam in 1:nlam) {
+  cat(paste('log10 lambda =',loglam[ilam],'\n'))
+  lambda = 10^loglam[ilam]
+  fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+  #  Smooth the data, outputting a list containing various quantities
+  smoothlist = smooth.basis(argvals, y, fdParobj)
+  dfsave[ilam] = smoothlist$df
+  gcvsave[ilam] = sum(smoothlist$gcv)
+}
+plot(loglam, gcvsave, type='b', 
+     xlab=expression(lambda))#paste0('log',expression(lambda)))
+lambda = 10^(loglam[which.min(gcvsave)])
+fdParobj = fdPar(fdobj=basisobj, Lfdobj=2, lambda=lambda)
+Tt.fit = smooth.basis(argvals, y, fdParobj)
+Tt.fd = Tt.fit$fd
+fdnames = list("times (1 to 100)",
+               "objects",
+               "y value ")
+Tt.fd$fdnames = fdnames
+pdf("allFitCurve.pdf",width=7,height=5)
+plot(Tt.fd, main='all estimated curve')
+dev.off()
+op <- par(mfrow=c(1,1))
+plotfit.fd(fData, argvals, Tt.fd,col=1, lty=1)
+par(op)
+#------均值函数
+meanTt <- mean(Tt.fd)
+pdf("meanF.pdf",width=7,height=5)
+plot(meanTt, col='red', main='mean function')
+for(i in 1:ncol(fData)){
+points(argvals, fData[,i]) #, col='gray'
+} # 将原始函数数据点画在图中
+lines(meanTt, col='red') #添加均值函数曲线到图中。
+dev.off()
+#-----协方差函数表面图
+Ttvar.bifd <- var.fd(Tt.fd)
+Tx <- seq(0, 100, length=nrow(fData))
+Ty <- seq(0, 100, length=nrow(fData))
+Ttvar.mat <- eval.bifd(Tx, Ty, Ttvar.bifd)
+pdf("CovF.pdf",width=7,height=5)
+persp(Tx, Ty, Ttvar.mat,
+      theta=-45, phi=25, r=3, expand = 0.5,
+      ticktype='detailed',
+      xlab="Times(1 to 100)",
+      ylab="Times (1 to 100)",
+      zlab="Covariance",
+      col=rainbow(24),
+      main='Covariation function')
+dev.off()
+#------------------函数主成分分析 
+Tpcalist <- pca.fd(Tt.fd, nharm=2)
+plot.pca.fd(Tpcalist)
+pdf('PC1.pdf', width=7, height = 5)
+plot.fd(Tpcalist$harmonics[1], main='first principal component') # first harmonic function
+dev.off()
+pdf('PC2.pdf', width=7, height = 5)
+plot.fd(Tpcalist$harmonics[2], main='second principal component') # second harmonic function
+dev.off()
+plot.fd(Tpcalist$meanfd, main='mean function')
+Tpcalist$varprop
+sum(Tpcalist$varprop)
+#---------------数据保存
+save.image('fda.Rdata')

@@ -1,0 +1,284 @@
+############全部代码基于《时间序列的R实现》####################
+#Chapter 01
+##学习1
+data(AirPassengers) #从dataset中载入时间序列数据
+(AP <- AirPassengers) #赋值输出
+class(AP);str(AP)
+start(AP); end(AP); frequency(AP) #查看起始值，结束值，按天(365)还是月(12)还是年(1)
+plot(AP, ylab = "Passengers (1000's)")#用类函数会时间序列图
+
+aggregate(AP) #求时间序列数据的每一行（观测值）的和，仍为时间序列
+layout(1:2) #设置图形窗口的布局，竖着放两幅图
+plot(aggregate(AP)) #按行和绘图
+boxplot(AP ~ cycle(AP)) #按对应月份绘图
+
+##学习2
+www <- "http://www.massey.ac.nz/~pscowper/ts/Maine.dat"
+Maine.month <- read.table(www, header = TRUE) #直接从网上读取表格数据
+attach(Maine.month)
+ class(Maine.month) #由于我国的天网城墙存在，读不了数据，还是以AP为例
+
+rownames(AP11)<-1949:1960 #将时间序列转化为数据框
+
+AP1<-as.data.frame(AP)
+Maine.month.ts <-ts(AP1, start = c(1949, 1), freq = 12) #将一列数据框转化为时间序列
+Maine.annual.ts <- aggregate(Maine.month.ts)/12 #计算每年的平均值
+layout(1:2)
+plot(Maine.month.ts, ylab = "unemployed (%)")
+plot(Maine.annual.ts, ylab = "unemployed (%)")
+Maine.Feb <- window(Maine.month.ts, start = c(1949,2), freq = TRUE) #抽取具体某一月的数据，这里是2月
+Maine.Aug <- window(Maine.month.ts, start = c(1949,8), freq = TRUE) #这里是8月
+Feb.ratio <- mean(Maine.Feb) / mean(Maine.month.ts) #mean函数可以用于时间序列，是类函数
+Aug.ratio <- mean(Maine.Aug) / mean(Maine.month.ts)
+
+##学习3
+AP1<-as.data.frame(AP)
+AP11<-NULL
+for(i in 1:(length(AP)/12)){
+ temp<-AP1[((i-1)*12+1):(i*12),]
+ AP11<-rbind(AP11,temp)
+}  #产生n行12列的数据框
+AP11
+Elec.ts <- ts(AP1[1:48,1], start = 1958, freq = 12)
+Beer.ts <- ts(AP1[49:96,1], start = 1958, freq = 12)
+Choc.ts <- ts(AP1[97:144,1], start = 1958, freq = 12) #模拟多元时间序列数据
+plot(cbind(Elec.ts, Beer.ts, Choc.ts)) #用plot和cbind在同一画布下绘制多个变量的时间序列图
+
+(AP.elec <- ts.intersect(AP, Elec.ts)) #对两个时间序列时间重叠的部分的数据按列合在一起
+class(AP.elec) #这种对象集矩阵、时间序列、多元时间序列的性质于一体
+
+start(AP.elec) #查看起始时间1958.1月
+end(AP.elec) #查看结束时间
+AP.elec[1:3, ] #查看1-3行数据
+AP <- AP.elec[,1]; Elec <- AP.elec[,2] #提取第一列和第二列
+layout(1:2)
+plot(AP, main = "", ylab = "Air passengers / 1000's")
+ plot(Elec, main = "", ylab = "Electricity production / MkWh")
+plot(as.vector(AP), as.vector(Elec),
+ xlab = "Air passengers / 1000's",
+ ylab = "Electricity production / MWh") #绘制散点图
+abline(reg = lm(Elec ~ AP))
+cor(AP, Elec) #求两个序列的相关系数
+
+##学习4
+AP1<-as.data.frame(AP) #将时间序列变为数据框，n行1列的数据框
+AP1[1:4,] #查看1-4行
+Z.ts <- ts(AP1, st = 1991, fr = 4) #从1991年第一季度算起，转化为季度为频率的数据
+plot(Z.ts, xlab = "time / years",
+ylab = "Quarterly exchange rate in $NZ / pound") #绘制以时间为横轴，数据为纵轴的时间序列图
+Z.92.96 <- window(Z.ts, start = c(1992, 1), end = c(1996, 1)) #该函数用于提取时间序列某一段数据
+Z.96.98 <- window(Z.ts, start = c(1996, 1), end = c(1998, 1)) #1996.1季度到1998.1季度的数据
+layout (1:2) #将图形窗口分为两行，相当于
+#op<-par(mfrow<-c(2,1)) #但很遗憾，该函数不能对时间序列数据绘图窗口设置起作用。
+plot(Z.92.96, ylab = "Exchange rate in $NZ/pound",
+xlab = "Time (years)" )  #用类函数绘制时间序列图
+plot(Z.96.98, ylab = "Exchange rate in $NZ/pound",
+xlab = "Time (years)" )
+
+##学习5
+plot(decompose(Elec.ts)) #利用加法模型分解，绘出原序列xt,趋势项mt,季节性效应st，误差项zt的图像
+Elec.decom <- decompose(Elec.ts, type = "mult") #利用乘法模型分解
+plot(Elec.decom)  #绘出乘法模型的分解的图像
+Trend <- Elec.decom$trend #提取趋势项序列成分，仍为时间序列对象(ts类)
+Seasonal <- Elec.decom$seasonal #提取季节效应项序列的成分
+ts.plot(cbind(Trend, Trend * Seasonal), lty = 1:2) #在同一画布下绘制多个时间序列的图
+(stl.Ets<-stl(Elec.ts,s.window=1958)) #利用loess平滑法分解该序列
+plot(stl.Ets) #绘图
+
+acf(AP) #绘出自相关系数的图
+acf(AP)$acf #样本的自相关系数值
+acf(AP)$acf[2] #2-1阶延迟自相关系数
+acf(AP)$acf[5]  #4阶延迟自相关系数
+acf(AP)$acf[1] #0阶系数等于1
+acf(AP, type = c("covariance"))$acf[2] #计算1阶延迟自协方差
+
+data(AirPassengers)
+AP <- AirPassengers
+AP.decom <- decompose(AP, "multiplicative") #按照乘法模型分解
+plot(ts(AP.decom$random[7:138])) #绘制随机项的时间序列图
+acf(AP.decom$random[7:138]) #绘制随机项的自相关系数图
+sd(AP[7:138] - AP.decom$trend[7:138]) #原序列将趋势项减掉，只剩下季节效应项和随机误差项；计算其标准差
+sd(AP.decom$random[7:138]) #计算模型随机项的标准差
+
+
+##Chapter 03
+ts.union(mdeaths, fdeaths) #合并具有相同frequency的序列,不重合的时间数据用NA代替
+cbind(mdeaths, fdeaths) # 等价于上一句
+ts.intersect(window(mdeaths, 1976), window(fdeaths, 1974, 1978)) #只取重合的时间。与ts.union不同。
+print(acf(ts.union(mdeaths, fdeaths))) #输出相关系数
+app.ran<-decompose(mdeaths)$random  #利用加法模型提取误差项
+app.ran.ts<-window(app.ran,start=c(1974,7),end=c(1979,6)) 提取指定时间段的序列
+act.ran<-decompose(fdeaths)$random #
+act.ran.ts<-window(act.ran,start=c(1974,7),end=c(1979,6))
+acf(ts.union(app.ran.ts,act.ran.ts)) #画出相关图
+ccf(app.ran.ts,act.ran.ts) #画出这两个变量的交叉相关系数函数图
+print(acf(ts.union(app.ran.ts,act.ran.ts))) #查看相关系数（包括自相关系数和交叉相关系数）的值
+
+##学习2
+T79<-1:10 #时间段记号
+Tdelt<-(1:100)/10 #线性间隔
+Sales<-c(840,1470,2110,4000,7590,10950,10530,9470,7790,5890) #时间序列数据
+CuSales<-cumsum(Sales) #一次累加
+Bass.nls<-nls(Sales~M*(((P+Q)^2/P)*exp(-(P+Q)*T79))/ #非线性最小二乘估计
+           (1+(Q/P)*exp(-(P+Q)*T79))^2,start=list(M=60630,P=0.03,Q=0.38)) 
+summary(Bass.nls) #参数估计汇总
+Bcoef<-coef(Bass.nls) #获取估计参数的值
+m<-Bcoef[1];p<-Bcoef[2];q<-Bcoef[3];
+ngete<-exp(-(p+q)*Tdelt) 
+Bpdf<-m*((p+q)^2/p)*ngete/(1+(q/p)*ngete)^2 #Bass模型概率密度函数
+plot(Tdelt,Bpdf,xlab='Year from 1979',ylab='Sales per year',type='l') #可视化
+points(T79,Sales)
+Bcdf<-m*(1-ngete)/(1+(q/p)*ngete) #Bass累积分布函数
+plot(Tdelt,Bcdf,xlab='Year from 1979',ylab='Cumulative sales',type='l') #再可视化
+points(T79,CuSales)
+
+##学习3
+(AP <- AirPassengers) #赋值输出
+AP.hw<-HoltWinters(AP,seasonal='mult') #建立乘法季节形式的HoltWinters模型
+sqrt(AP.hw$SSE/length(AP.hw)) #计算残差标准误
+sd(AP.hw$fitted-AP.hw$x) #计算残差标准差
+plot(AP.hw) #绘出观测值和拟合值的序列图,观测为黑色，拟合值为红色
+AP.predict<-predict(AP.hw,n.ahead=4*12) #对后4年序列进行预测
+#predict(AP.hw,n.ahead=4*12,prediction.interval=T) #获得预测值和预测区间
+ts.plot(AP,AP.predict,lty=1:2,col=1:2) #绘出原始序列和预测序列
+
+###Chapter 04基本随机过程模型
+##白噪声模拟
+set.seed(1) #设置随机种子
+w<-rnorm(100) #模拟高斯白噪声
+plot(w,type='l') #可视化
+plot(rnorm(100),type='l') #函数嵌套
+x<-seq(-3,3,length=100)
+hist(rnorm(100),prob=T);points(x,dnorm(x),type='l')
+set.seed(2)
+acf(rnorm(100))
+
+##随机游走模型的模拟
+set.seed(2)
+x<-w<-rnorm(1000)
+for(t in 2:1000)x[t]<-x[t-1]+w[t] #依据随机游走定义
+#x<-cumsum(w) #和for循环等价
+plot(x,type='l')
+acf(diff(x),lag.max=50) #绘制延迟50阶的自相关函数图像，在5%的显著性内不能拒绝其为白噪声的图像
+##表示对于序列x，随机游走模型是适合的
+#acf(diff(x),lag.max=50,type='covariance',plot=F)
+
+##自回归模型模拟
+polyroot(c(1,-1/2,-1/2)) #利用回归系数多项式方程判断自回归模型的稳定性（模在单位圆外）
+polyroot(c(-1/2,-1/2,1)) #利用特征方程判断稳定性（模在单位圆内）
+##1阶自回归自相关系数指数衰减模拟
+rho<-function(k,alpha) alpha^k
+layout(1:2)
+plot(0:10,rho(0:10,0.7),type='b')
+plot(0:10,rho(0:10,-0.7),type='b')
+abline(h=0,col=2)
+##1阶自回归模拟
+set.seed(1) #设置随机数种子，使结果能够重现
+x<-w<-rnorm(100)
+for(t in 2:100) x[t]<-0.7*x[t-1]+w[t] #利用1阶自回归模型的定义
+plot(x,type='l') #绘出序列图
+acf(x) #自相关函数图
+pacf(x) #部分相关函数图
+##建立AR(p)模型
+x.ar<-ar(x,method='mle') #利用极大似然估计来估计AR模型的参数
+x.ar$order #输出模型的阶数
+x.ar$ar #输出估计的自回归系数
+x.ar$resid #模型的残差
+x.ar$aic #ＡＩＣ的值　　
+x.ar$asy.var　#自回归系数的渐近方差
+x.ar$ar+c(-2,2)*sqrt(x.ar$asy.var) #利用2*sigma原则得到置信水平为95%的参数区间估计
+mean(x) #计算序列的中心（均值）
+acf(x.ar$resid[-1]) #绘制残差的自相关函数图，不能拒绝其为白噪声
+
+###Chapter 05时间序列回归模型
+##回归模拟
+set.seed(1)
+z<-w<-rnorm(100,sd=20)
+for(t in 2:100) z[t]<-0.8*z[t-1]+w[t] #生成一阶自相关序列
+Time<-1:100
+x<-50+3*Time+z #残差一阶自相关的线性回归模型模拟
+plot(x,xlab='time',type='l')
+##对模拟数据进行拟合
+x.lm<-lm(x~Time) #建立一般线性回归模型
+coef(x.lm) #提取系数
+sqrt(diag(vcov(x.lm))) #计算未知参数的估计统计量的标准误的估计
+summary(x.lm) #模型汇总
+acf(x.lm$residual) #等价于 自相关函数图像
+acf(resid(x.lm))
+pacf(resid(x.lm)) #偏相关函数图像
+library(nlme)
+x.glm<-gls(x~Time,cor=corAR1(0.8)) #基于广义最小二乘回归估计的线性回归模型
+coef(x.glm) #提取系数
+sqrt(diag(vcov(x.glm))) #计算未知参数的估计统计量的标准误的估计
+
+##Chapter 06平稳模型
+rho<-function(k,beta){ #自编计算移动平均模型的自相关函数
+ q<-length(beta)-1
+ if(k>q) ACF<-0 else{
+ s1<-0;s2<-0
+ for(i in 1:(q-k+1)) s1<-s1+beta[i]*beta[i+k]
+ for(i in 1:(q+1)) s2<-s2+beta[i]^2
+ ACF<-s1/s2}
+}
+par(mfrow=c(2,1))
+beta<-c(1,0.7,0.5,0.2) #设置模型的参数
+rho.k<-rep(1,10) #初始化自回归系数
+for(k in 1:10) rho.k[k]<-rho(k,beta) #用自定义函数计算k阶延迟自相关系数
+plot(0:10,c(1,rho.k),pch=4,ylab=expression(rho[k])) #图像y坐标标签为rho_k
+abline(0,0)
+beta<-c(1,-.7,.5,-.2) #绘制第二个MA过程的自相关函数图像
+for(k in 1:10) rho.k[k]<-rho(k,beta) #用自定义函数计算k阶延迟自相关系数
+plot(0:10,c(1,rho.k),pch=4,ylab=expression(rho[k])) #图像y坐标标签为rho_k
+abline(0,0)
+
+##模拟移动平均模型MA(3)
+set.seed(1) #设置随机种子
+b<-c(0.8,0.6,0.4) #设置系数
+MA.sim <- function(b){ #自定义MA(q)序列的模拟函数
+q <- length(b) +1
+x<-w<-rnorm(1000) #产生白噪声
+for(t in q:1000){ #产生MA过程平稳序列
+ for(j in 1:(q-1)) x[t]<-x[t]+b[j]*w[t-j] #当前X_t为当前时刻的白噪声+后3项白噪声的线性组合
+}
+x
+}
+plot(x,type='l')
+acf(x) #绘制自相关函数图像，注意观测其为q阶截尾
+##验证了其自相关系数函数后，对时间序列建立MA(q)模型
+x.ma<-arima(x,order=c(0,0,3)) #3阶MA模型建立
+x.ma
+##ARMA(p,q)混合模型
+##模拟ARMA(1,1)过程
+set.seed(1)
+x <- arima.sim(n = 10000, list(ar = -0.6, ma = 0.5)) #注意写程序的标准格式，不然看起来会很丑
+coef(arima(x, order = c(1, 0, 1))) #查看其系数
+##习题
+##Two
+beta <- c( 1/2)
+x1<- MA.sim(beta)
+beta2 <- c( 2)
+x2<- MA.sim( beta2)
+layout(1:2)
+plot( x1, type = 'l')
+plot( x2, type = 'l')
+acf( x1)
+acf( x2)
+pacf( x1)
+pacf( x2)
+##Five
+#1)
+ARMA11.acf <- function(Alpha, Beta, lagLength=25){
+ARMA11.acF<-0
+for( k in 1:lagLength){
+ ARMA11.acF[k] <- (Alpha^(k-1)*(Alpha+Beta)*(1+Alpha*Beta))/(1+Alpha*Beta+Beta^2)
+}
+ARMA11.acF <- c(1,ARMA11.acF)
+}
+#2)
+Acf11 <- ARMA11.acf(0.7,-0.5, 20)
+plot(0:20,Acf11,pch=4, col='green4')
+#3)
+set.seed(1)
+x <- arima.sim(n = 1000, list(ar = 0.7, ma = -0.5))
+win.graph()
+acf(x, lag = 20)

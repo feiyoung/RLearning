@@ -1,0 +1,50 @@
+#------------------------------------Fisher Linear discriminating analysis--------------------------#
+#利用datasets包中的数据
+data(iris)#对iris花利用判别分析分类。
+attach(iris) #将数据框的元素放入内存
+str(iris) #查看数据信息
+names(iris)
+tail(iris)#分析数据应该先整理成这种data.frame格式,并将待分类的Species以缺省值形式输入。
+
+library(MASS)
+iris.lda<-lda(Species~Sepal.Length + Sepal.Width+ Petal.Length + Petal.Width)
+iris.lda
+iris.pred<-predict(iris.lda)$class#利用原训练数据进行检验，看模型预测精度是否通过，
+
+#利用混淆矩阵评价判别分析的效果
+(ConfuseMatrix<-table(iris.pred,Species)) #该函数建立一个联列表，统计分类情况，正确个数和错误个数。
+#对角线上就是正确个数，非对角线上就是误判个数。
+prop.table(ConfuseMatrix,2) #2表示按列计算所占的比例
+
+detach(iris) #关闭iris与内存的连接
+#精度高，可以开始对新样本进行分类啦！
+New.pred<-predict(iris.lda,iris[145:150,1:4]);New.pred$class #predict利用指定的模型进行预测，输出分类结果。
+New.pred$x #输出投影空间的坐标
+
+
+#2.判别分析案例2
+#########################载入外部数据进行分析################################
+DirFile<-"E:\\学习\\R用于统计分析论文学习\\判别分析\\EvaData.txt"
+EvaData<-read.table(file=DirFile,header=TRUE) #依旧是老规矩，先载入数据
+D1.Data<-subset(EvaData,EvaData$Y == 1 | EvaData$Y == 2 ) #提取第一类和第二类的数据
+D2.Data<-subset(EvaData,EvaData$Y == 3) #提取待分类的数据
+par(mfrow=c(1,2)) #分割图形窗口，1行2列显示
+plot(D1.Data[,1:2],pch=D1.Data$Y,xlab="考核指标1",ylab="考核指标2",main="部门业绩考核情况") #绘出已知类别的数据散点图
+points(D2.Data[,1],D2.Data[,2],pch=D2.Data[,3],col=3) #绘制待分类数据的散点图
+##建立Fisher判别分析模型
+  (Result<-lda(Y~.,data=D1.Data)) 
+  Y<-predict(Result,D1.Data) #利用建立的模型对已知类别的数据进行分类，返回一个列表
+##利用混淆矩阵评价判别分析的效果
+ (ConfuseMatrix<-table(Y$class,D1.Data[,3]))
+ prop.table(ConfuseMatrix,2) #计算分类精度，为100%
+##精度检验通过，下面对待分类样本进行分类
+  YN<-predict(Result,D2.Data) #对待分类数据进行分类，返回一个列表，含有3个成分元素。类别，优先概率，投影空间坐标
+  YN$class #输出列表中的类别成分，此处判别结果和距离判别结果完全吻合
+##数据可视化
+  plot(Y$x,pch=as.integer(as.vector(Y$class)),xlab="观测编号",ylab="Y",main="Fisher判别空间中部门业绩考核情况") #投影为一维数据
+  abline(h=0,lty=2) #添加y=0的水平线
+  points(1:dim(D2.Data)[1],YN$x,pch=as.integer(as.vector(YN$class)),col=3) #绘出散点图,将类别映射成点的符号，这是ggplot中的术语
+
+
+
+                   

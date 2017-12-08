@@ -1,0 +1,109 @@
+#-----------------(1)mice包处理缺失数据-----------------------#
+require(mice)
+data(sleep,package='VIM')#加载VIM包中的数据sleep
+dim(sleep) 
+sum(complete.cases(sleep)) #统计完整地样本数
+md.pattern(sleep)#判断缺失数据的模式是否随机
+#-------------------下面用mice多重插补法填补缺失数据
+imp<-mice(sleep,m=5,seed=1234) #默认m=5表示5次插补，多重插补的次数
+fit<-with(imp,lm(Dream~Span+Gest))
+pooled<-pool(fit)
+summary(pooled)
+imp #获取插补汇总信息
+imp$imp$Dream#观察Dream变量的5次插补的实际值
+complete(imp,action=3) #观察m次插补数据集的任何一个（此处为第三个）
+sleep.chabu<-complete(imp,action=5) #将最后一次插补数据集作为插补完成的数据
+##
+require(VIM)
+aggr(sleep,prop=F,number=T)
+matrixplot(sleep)#生成每个样本观察值的交互图形，默认缺失值为红色
+marginplot(sleep[c('Gest','Dream')],pch=20,col=c(1,2,4))
+x<-as.data.frame(abs(is.na(sleep))) #求sleep的影子矩阵，1表示缺失，0表示存在
+head(sleep,n=5)
+head(x,n=5)
+#建立函数lie()提取含有缺失值的变量
+lie<-function(x){
+ n<-dim(x)[2]
+k<-1
+lie<-c()
+ for(i in 1:n){
+ if(sd(as.matrix(x[,i]))>0){
+ lie[k]<-colnames(x[i])
+k<-k+1
+}
+else next
+ }
+lie
+ }
+
+y<-x[lie(x)] #提取含缺失值的变量
+cor(y) #列出这些指示变量间的相关关系
+cor(sleep,y,use='pairwise.complete.obs')#得到含缺失值变量与其他可观测变量间的关系
+options(digits=1)
+cor(na.omit(sleep))
+fit<-lm(Dream~Span+Gest,data=na.omit(sleep))
+summary(fit)
+
+
+
+
+
+##案例2
+require(mice)
+summary(nhanes2)#使用mice包中的数据集
+dim(nhanes2) #维数
+sum(!complete.cases(nhanes2))#统计缺省值的样本数
+sum(is.na(nhanes2))#统计缺省值的总个数
+md.pattern(nhanes2)#判断缺失数据的模式是否随机
+##-------------------------------------------1处理法1：删除法
+#--------------1.1直接删除含有NA值的样本
+data1<-na.omit(nhanes2)
+summary(data1)
+#--------------1.2删除对分析影响不大但缺失严重的指标变量
+data2<-nhanes2[,-4]
+summary(data2)
+##-------------------------------------------2插补法
+#-------------2.1最简插补法（从总体中随机抽取某些样本值插补缺失值）PS：此法很容易出问题，尤其是碰到变量相关时，一般不建议使用
+sub<-which(is.na(nhanes2[,4])==T)#取出含缺省值的指标变量的行标
+data.complete<-nhanes2[-sub,]#取出该变量完整的样本
+data.na<-nhanes[sub,]#取出该变量缺失的样本
+data.na[,4]<-sample(data.complete[,4],length(data.na[,4]),replace=T)#对缺省样本填补
+data.na
+#-------------2.2中心法：（用分布的中心填补缺失值）一般正态分布用均值、偏态分布用中位数或众数
+sub<-which(is.na(nhanes2[,4])==T)#取出含缺省值的指标变量的行标
+data.complete<-nhanes2[-sub,]#取出该变量完整的样本
+data.na<-nhanes[sub,]#取出该变量缺失的样本
+data.na[,4]<-mean(data.complete[,4])#对缺省样本填补
+data.na
+#------------2.2.1中心法填补例子2
+data(algae)
+cleanAlgae <- centralImputation(algae)
+summary(cleanAlgae)
+#-------------2.3.1回归插补法
+sub<-which(is.na(nhanes2[,4])==T)#取出含缺省值的指标变量的行标
+data.complete<-nhanes2[-sub,]#取出该变量完整的样本
+data.na<-nhanes[sub,]#取出该变量缺失的样本
+lm<-lm(chl~bmi,data=data.complete)
+nhanes2[sub,4]<-round(predict(lm,data.na)) #回归后四舍五入取整
+head(nhanes2)
+#-------------2.3.2利用回归插补法
+require(DMwR)
+data(algae)
+cor(algae[,4:18],use='complete.obs')#利用完整样本计算变量间的相关系数
+symnum(cor(algae[,4:18],use='complete.obs'))#用符号标出相关性的强弱
+algae<-algae[-manyNAs(algae),]#移除缺省值较多的样本
+lm.algae<-lm(PO4~oPO4,data=algae)#线性回归
+#algae[28,'PO4']<-lm.algae$coefficients[1]+lm.algae$coefficients[2]*algae[28,'oPO4'] #回归填补第28行的OP4
+##建立函数进行填补
+fillPO4<-function(oP){
+if(is.na(oP))
+return(NA)
+else
+return(lm.algae$coefficients[1]+lm.algae$coefficients[2]*oP)
+}
+algae[is.na(algae$PO4),'PO4']<-sapply(algae[is.na(algae$PO4),'oPO4'],fillPO4)#填补PO4
+#------------------2.4利用k临近算法进行填补
+data(algae)
+algae<-algae[-manyNAs(algae,0.2),]#移除缺省值超过2%的观察值
+algae<-knnImputation(data=algae,k=10,scale=T, meth='weighAvg') 
+

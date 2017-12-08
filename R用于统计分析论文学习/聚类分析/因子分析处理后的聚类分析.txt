@@ -1,0 +1,80 @@
+#---------------------因子分析进行降低变量相关性处理的聚类分析
+options(digits=2)
+data(iris)
+#--------------------因子分析偏相关系数检验
+iris.scale <- scale(iris[,-5])
+iris.cor <- cor(iris.scale)
+library(psych)
+KMO(iris.cor) #勉强
+cortest.bartlett(iris.cor,n=150) #检验通过
+#---------------------因子分析
+library(parallel)
+fa.parallel(iris.scale,fa="fa",n.iter=100,main="基于平行分析的碎石图")
+library(GPArotation) 
+fa.varimax <- fa(iris.scale,nfactors=3,rotate="varimax", fm="pa", scores=T)
+#----------------------进行Kmeans聚类  
+Iris <- cbind(fa.varimax$scores,iris[,5])
+set.seed(1234)
+cl<-kmeans(as.matrix(Iris[,-4]),3,30) #聚成3类，随机选择聚类中心重复30次
+cl
+(ConfuseMatrix<-table(cl$cluster,Iris[,4])) #构造混淆矩阵，验证精度
+prop.table(ConfuseMatrix,2)*100 #按列计算聚类精度
+#----------预测精度比不上直接对变量进行聚类啊
+     1  2  3
+  1 98  0  0
+  2  2 78 34
+  3  0 22 66
+#----------------------进行层次聚类
+iris.hc1<-hclust(dist(Iris[,1:3]),'ward.D')#默认是最长距离法进行聚类
+plot(iris.hc1,labels = F, hang=-1)#代替plot( )绘制聚类的谱系图(两者使用方法基本相同）
+re<-rect.hclust(iris.hc1,k=3)#用函数rect.hclust( ) 按给定的类的个数3
+#(或阈值)进行聚类,
+iris.id <-cutree(iris.hc1,3)#)将iris.hc输出编制成若干（3）组
+(ConfuseMatrix<-table(iris.id,Iris[,4]))#果然离差平方和聚类更准确一点。
+prop.table(ConfuseMatrix,2)*100 #计算准确度
+#-----------还是不如那个不进行因子分析的啊
+iris.id  1  2  3
+      1 98  0  0
+      2  2 52 28
+      3  0 48 72
+
+#-------------------------------另一种思路聚类
+iris.scale <- scale(iris[,-5])
+cor(iris.scale) #发现第二个变量与其他变量的相关性不是很强，故剔除后做因子分析
+iris.scale2 <- iris.scale[,-2]
+library(psych)
+KMO(iris.scale2) #通过
+cortest.bartlett(iris.scale2,n=150) #检验也通过
+#---------------------因子分析
+library(parallel)
+fa.parallel(iris.scale2,fa="fa",n.iter=120,main="基于平行分析的碎石图")
+library(GPArotation) 
+fa.varimax <- fa(iris.scale2,nfactors=1,rotate="varimax", fm="minres", scores=T) #只取一个因子
+#----------------------进行Kmeans聚类  
+Iris <- cbind(fa.varimax$scores,iris.scale[,2],iris[,5]) #对含两个变量的数据进行因子分析
+set.seed(1234)
+cl<-kmeans(as.matrix(Iris[,-3]),3,30) #聚成3类，随机选择聚类中心重复30次
+cl
+(ConfuseMatrix<-table(cl$cluster,Iris[,3])) #构造混淆矩阵，验证精度
+prop.table(ConfuseMatrix,2)*100 #按列计算聚类精度
+  1  2  3
+  1 98  0  0
+  2  2 56 22
+  3  0 44 78
+#----------------------进行层次聚类
+iris.hc1<-hclust(dist(Iris[,1:2]),'ward.D')#默认是最长距离法进行聚类
+plot(iris.hc1,labels = F, hang=-1)#代替plot( )绘制聚类的谱系图(两者使用方法基本相同）
+re<-rect.hclust(iris.hc1,k=3)#用函数rect.hclust( ) 按给定的类的个数3
+#(或阈值)进行聚类,
+iris.id <-cutree(iris.hc1,3)#)将iris.hc输出编制成若干（3）组
+(ConfuseMatrix<-table(iris.id,Iris[,3]))#果然离差平方和聚类更准确一点。
+iris.id  1  2  3
+      1 49  0  0
+      2  1 15  2
+      3  0 35 48
+
+prop.table(ConfuseMatrix,2)*100 #计算准确度
+iris.id  1  2  3
+      1 98  0  0
+      2  2 30  4
+      3  0 70 96 #第二类不行，精度低

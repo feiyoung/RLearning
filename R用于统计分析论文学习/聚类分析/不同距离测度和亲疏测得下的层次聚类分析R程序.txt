@@ -1,0 +1,54 @@
+#*************基于不同距离测度和亲疏测得下的层次聚类分析R程序*******#
+#****作者：独闯阳光道***************************************#
+#****作者博客：http://blog.sina.com.cn/u/2431250245*************************#
+#****邮箱: weiliu321@yahoo.com（欢迎交流经验）
+#****版本：Cluter.001*******************************************#
+#****时间：2015-3-28*************************************#
+
+#假设我们只知道数据内有三种品种的鸢尾花而不知道每朵花的真正分类, 只能凭借花
+#萼及花瓣的长度和宽度去分成三类, 这就是聚类分析.
+rm(list=ls())#清除环境变量
+options(digits=2)
+data(iris); attach(iris) #载入数据(这里是来自R自带的数据集)
+measure.methods<-c('centroid',"single","average" ,"complete","ward.D","ward.D2" )#类间的亲疏程度的测度方法
+dist.methods<-c("euclidean", "maximum", "manhattan", "canberra", "binary","minkowski")#观测值间的距离测度(共36种组合方式)
+
+kk<-1;jl.jieguo<-list() #初始化聚类结果
+Precise<-list();julei.imfo<-list()
+for(dist in dist.methods){
+ for(measure in measure.methods){
+   iris.hc<-hclust(dist(iris[,1:4],method=dist),measure)#默认是最长距离法进行聚类
+   iris.id <-cutree(iris.hc,3)#)将iris.hc输出编制成若干组,这里聚成3类
+   jl.jieguo[[kk]]<-iris.id
+##存储聚类信息
+   julei.imfo[[kk]]<-iris.hc
+##计算准确度
+   ConfuseMatrix<-table(iris.id,Species)
+   Precise[[kk]]<-diag(prop.table(ConfuseMatrix,2));kk<-kk+1
+ }
+}
+jl.jieguo<-as.data.frame(jl.jieguo);Precise<-as.data.frame(Precise)
+##取每种方法的前面字母，作为列名
+names(jl.jieguo)<-paste(rep(c("Ce","Si","Av","Co","Wd","Wd2"),times=6),rep(c("Eu","Max","Man","Ca","Bi","Mi"),each=6),sep='.')
+names(Precise)<-names(jl.jieguo)
+print(Precise) #从精确度中可以看出：Co.Ca和Wd2.Ca精确度最高，他们的聚类结果完全相同
+sub1<-which(names(Precise)=="Co.Ca");sub2<-which(names(Precise)=="Wd2.Ca") #提取两种组合的位置信息
+BestClu1<-cutree(julei.imfo[[sub1]],3)  #得到最佳聚类1
+BestClu2<-cutree(julei.imfo[[sub2]],3)  #得到最佳聚类2
+C.matrix<-table(BestClu1,Species) #计算模糊矩阵
+prop.table(C.matrix,2) #计算Co.Ca组合的精确度
+prop.table(table(BestClu2,Species),2) #计算Wd2.Ca组合精确度
+BestClu2==BestClu1 #聚类结果相同
+detach(iris) #关闭iris的元素与内存的直接连接
+
+
+##对分类结果可视化，可以看出第三类混在了第二类中
+plot(BestClu1,pch=BestClu1,ylab="类别编号",xlab="花样本",main="聚类的类成员",axes=FALSE)
+par(las=2) #指定坐标标签旋转90度
+axis(1,at=1:150,labels=1:150,cex.axis=0.6) #设置横坐标
+axis(2,at=1:3,labels=1:3,cex.axis=0.6) #设置纵坐标
+abline(v=c(50,100),col=2) #添加真实的分类线
+box() #添加外框
+
+
+

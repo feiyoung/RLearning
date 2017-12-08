@@ -1,0 +1,170 @@
+#判别分析 用以判别个体所属群体的一种统计方法 判别分析重点是两类群体的判别方法
+#主要判别分析方法 有距离判别 贝叶斯判别 费歇判别法
+ 
+1、关键点：
+#贝叶斯判别 贝叶斯判别式假定对研究对象已有一定的认识 这种认识常用先验概率来描述
+#当取得样本后 就可以用样本来修正已经有的先验概率分布 得出后验概率分布
+#然后通过后验概率分布 进行各种统计推断
+#实际上就是使平均误判损失（误判概率与误判损失的结合）ECM达到极小的过程
+ 
+2、案例分析
+（一）两个总体的贝叶斯判别分析
+#1.载入数据
+TrnX1<-matrix(
+  c(24.8, 24.1, 26.6, 23.5, 25.5, 27.4,
+    -2.0, -2.4, -3.0, -1.9, -2.1, -3.1),
+      ncol=2)
+TrnX2<-matrix(
+  c(22.1, 21.6, 22.0, 22.8, 22.7, 21.5, 22.1, 21.4,
+    -0.7, -1.4, -0.8, -1.6, -1.5, -1.0, -1.2, -1.3),
+  ncol=2)
+#2、载入两总体的贝叶斯判别函数    注 把贝叶斯判别函数存在了计算机的E盘R文件夹中
+source("E:/R/discriminiant.bayes.R")
+#3、协方差相同时的判别
+discriminiant.bayes(TrnX1, TrnX2, rate=8/6,var.equal=TRUE)
+#协方差不同时的判别
+discriminiant.bayes(TrnX1, TrnX2, rate=8/6)
+ 
+PS============================discriminiant.bayes.R========================
+#两个总体判别的贝叶斯判别程序
+#输入 TrnX1 TrnX2表示X1类 X2类训练样本 样本输入格式为数据框
+#rate=p2/p1缺省时为1
+#Tst为待测样本 其输入格式是数据框  为两个训练样本之和
+#var.equal是逻辑变量 当其值为TRUE是表示认为两个总体的协方差相同 否则不同
+#输出 函数的输出时1和2构成的一维矩阵 1表示待测样本属于X1类
+discriminiant.bayes <- function
+(TrnX1, TrnX2, rate = 1, TstX = NULL, var.equal = FALSE){
+  if (is.null(TstX) == TRUE) TstX<-rbind(TrnX1,TrnX2)
+  if (is.vector(TstX) == TRUE) TstX <- t(as.matrix(TstX))
+  else if (is.matrix(TstX) != TRUE)
+    TstX <- as.matrix(TstX)
+  if (is.matrix(TrnX1) != TRUE) TrnX1 <- as.matrix(TrnX1)
+  if (is.matrix(TrnX2) != TRUE) TrnX2 <- as.matrix(TrnX2)
+  nx <- nrow(TstX)
+  blong <- matrix(rep(0, nx), nrow=1, byrow=TRUE,
+                  dimnames=list("blong", 1:nx))
+  mu1 <- colMeans(TrnX1); mu2 <- colMeans(TrnX2)
+  if (var.equal == TRUE || var.equal == T){
+    S <- var(rbind(TrnX1,TrnX2)); beta <- 2*log(rate)
+    w <- mahalanobis(TstX, mu2, S)
+    - mahalanobis(TstX, mu1, S)
+  }
+  else{
+    S1 <- var(TrnX1); S2 <- var(TrnX2)
+    beta <- 2*log(rate) + log(det(S1)/det(S2))
+    w <- mahalanobis(TstX, mu2, S2)
+    - mahalanobis(TstX, mu1, S1)
+  }
+  for (i in 1:nx){
+    if (w[i] > beta)
+      blong[i] <- 1
+    else
+      blong[i] <- 2
+  }
+  blong
+}
+
+（二）多个总体贝叶斯判别
+X<-iris[,1:4]
+G<-gl(3,50)
+source("E:/R/distinguish.bayes.R")
+distinguish.bayes(X,G)
+PS：=============distinguish.bayes.R====================
+#多个总体判别的贝叶斯判别程序
+#输入 TrnX 表示训练样本 样本输入格式为数据框
+#TrnG是因子变量 表示训练样本的分类情况
+#输入变量p是先验概率 缺省值为1
+#Tst为待测样本 其输入格式是数据框
+#var.equal是逻辑变量 当其值为TRUE是表示认为两个总体的协方差相同 否则不同
+#输出 函数的输出是数字构成的一维矩阵 1表示待测样本属于X1类
+distinguish.bayes <- function
+(TrnX, TrnG, p = rep(1, length(levels(TrnG))),
+ TstX = NULL, var.equal = FALSE){
+  if ( is.factor(TrnG) == FALSE){
+    mx <- nrow(TrnX); mg <- nrow(TrnG)
+    TrnX <- rbind(TrnX, TrnG)
+    TrnG <- factor(rep(1:2, c(mx, mg)))
+  }
+  if (is.null(TstX) == TRUE) TstX <- TrnX
+  if (is.vector(TstX) == TRUE) TstX <- t(as.matrix(TstX))
+  else if (is.matrix(TstX) != TRUE)
+    TstX <- as.matrix(TstX)
+  if (is.matrix(TrnX) != TRUE) TrnX <- as.matrix(TrnX)
+  nx <- nrow(TstX)
+  blong <- matrix(rep(0, nx), nrow=1,
+                  dimnames=list("blong", 1:nx))
+  g <- length(levels(TrnG))
+  mu <- matrix(0, nrow=g, ncol=ncol(TrnX))
+  for (i in 1:g)
+    mu[i,] <- colMeans(TrnX[TrnG==i,])
+  D <- matrix(0, nrow=g, ncol=nx)
+  if (var.equal == TRUE || var.equal == T){
+    for (i in 1:g){
+      d2 <- mahalanobis(TstX, mu[i,], var(TrnX))
+      D[i,] <- d2 - 2*log(p[i])
+    }
+  }
+  else{
+    for (i in 1:g){
+      S <- var(TrnX[TrnG==i,])
+      d2 <- mahalanobis(TstX, mu[i,], S)
+      D[i,] <- d2 - 2*log(p[i])-log(det(S))
+    }
+  }
+  for (j in 1:nx){
+    dmin <- Inf
+    for (i in 1:g)
+      if (D[i,j] < dmin){
+        dmin <- D[i,j]; blong[j] <- i
+      }
+  }
+  blong
+}
+
+#--------------------------Example Three
+discriminiant.bayes <- function(data1, testdata=NULL, rate = 1, 
+                                 var.equal = FALSE){
+  if(is.null(testdata)) testdata <- data1[,1:(length(data1)-1)]
+  if(is.vector(testdata)) testdata <- t(testdata)
+  if (is.data.frame(data1) != TRUE) 
+    stop('the data must be a dataframe')
+  m <- dim(testdata)[1]; n<- dim(testdata)[2]
+  result <- character(m)
+  wea1 <- data1[,n+1]
+  class1 <- levels(wea1)
+  TrainX1 <- data1[wea1==class1[1],]
+  TrainX2 <- data1[wea1==class1[2],]
+  TrnX1 <- TrainX1[,1:n]
+  TrnX2 <- TrainX2[,1:n]
+  mu1 <- colMeans(TrnX1); mu2 <- colMeans(TrnX2)
+  if (var.equal == TRUE || var.equal == T){
+    S <- var(rbind(TrnX1,TrnX2)); beta <- 2*log(rate)
+    w <- mahalanobis(testdata, mu2, S)
+         - mahalanobis(testdata, mu1, S)
+  }
+  else{
+    S1 <- var(TrnX1); S2 <- var(TrnX2)
+    beta <- 2*log(rate) + log(det(S1)/det(S2))
+    w <- mahalanobis(testdata, mu2, S2)
+    - mahalanobis(testdata, mu1, S1)
+  }
+  for (i in 1:m){
+    if (w[i] > beta)
+      result[i] <- class1[1]
+    else
+      result[i] <- class1[2]
+  }
+  result
+}
+X1 <- c(-1.9,-6.9,5.2,5.0,7.3,6.8,0.9,-12.5,1.5,3.8,
+        0.2,-0.1,0.4,2.7,2.1,-4.6,-1.7,-2.6,2.6,-2.8)
+X2 <- c(3.2,10.4,2.0,2.5,0.0,12.7,-15.4,-2.5,1.3,6.8,
+        0.2,7.5,14.6,8.3,0.8,4.3,10.9,13.1,12.8,10.0)
+n <- length(X1)/2
+Wea <- c(rep('rain', n),rep('sun', n))
+data1 <- data.frame(X1=X1,X2=X2, Weather=Wea)
+newdata <- data.frame(X1=8.1,X2=2.0)
+## when the variance are equal
+discriminiant.bayes(data1,testdata=newdata, rate=8/6,var.equal=TRUE)
+## when the variance are not equal
+discriminiant.bayes(data1,testdata=newdata, rate=8/6)

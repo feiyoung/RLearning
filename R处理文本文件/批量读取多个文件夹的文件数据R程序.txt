@@ -1,0 +1,87 @@
+
+R语言：批量处理文本文件
+多个数据以不同的日期作文件夹分别存放，每个文件夹中又有近一千个文本文件，每个文件都是一个用户的行为日志。为了分析这些数据，
+首先需要将这两万个文本文件读入R中，再用字符串函数进行处理成结构化的数据。处理方法如下：
+
+#-------------------------------------步骤1. 获取所有文件的完整路径
+library(stringr)
+# 读入文档地址
+path <- 'E:\\学习'
+dir.name <- dir('E:\\学习') #读入该路径中所有文件名，为一个字符串向量
+doc.name <- list() #初始化列表
+fre <- numeric()
+## 1. for循环方法1
+for (i in 1:length(dir.name)) {
+    doc.name[[i]]<- dir(paste(path,dir.name[i],sep='\\')) #将所有文件夹名和路径连接在一起，
+                                          #再读取该文件夹中的所有文件名，放在一个列表中
+    fre[i] <- length(doc.name[[i]]) #再计算每个文件夹中的文件个数
+}
+## 2. 以上for循环的向量化方法
+doc.name <- lapply(dir.name, function(x) dir(paste(path, x, sep='\\'))) # 获得文件夹中的所有文件名
+(fre <- sapply(doc.name, function(x) length(x)) )  # 这种写法更简洁，比for循环好多了
+
+dir <- rep(dir.name,fre) #将文件路径名重复文件个数那么多次,对应列表的每个元素重复对应多次，并返回一个列表
+doc.name <-unlist(doc.name) #将列表转化为向量
+file.name <- character()
+## 1. for循环方法
+for ( i in 1:length(dir)) {
+    file.name[i] <-  paste(path,dir[i],doc.name[i],sep='\\') #读入每个文件的路径
+}
+## 2. 上面for的向量化方法
+dirdoc <- cbind(dir, doc.name) # 这种方法用于两个长度相等的变量同事变化时的向量化方法
+file.name <-  apply(dirdoc, 1, function(x) paste(path, x[1], x[2], sep='\\'))
+
+ 
+
+#---------------------------------------------步骤2. 建立抽取主函数，返回列表
+data.get <- function(file.name) {
+    #获取文本
+    temp <- readLines(file.name,encoding='UTF-8')
+    if (length(temp)<=2) return(NA)
+    # 用户编号
+    id <- str_match(file.name, "[A-Z0-9]{32}")
+    # 调查日期
+    day <- str_match(file.name, "\\d+-\\d+-\\d+")
+    # 开机时点
+    clock <-str_sub(str_match(file.name,'_\\d{2}-'),2,3)
+    # 切分转换文本函数
+        trans <- function(x){
+            res <- unlist(str_split(x, "\\[=\\]|<=>"))
+        #     res <- str_extract(x, "[^<=>]+\\.[a-z]+")
+            return(res)
+        }
+    # 将文本切开转为列表
+    result <- lapply(temp,trans)
+ 
+    # 开机时长
+    opentime <- as.numeric(result[1][2])
+    # 先进行时间分析，由于有的信息不是按顺序排列，所以要按时点重排
+    # 时点抽取
+    time <- unlist(lapply(result[-c(1:2)], function(x) x[2]))
+    time <- as.numeric(time)
+    # 时点排序，然后重排result列表
+    new.res <- result[-c(1:2)][order(time)]
+ 
+    # 返回用户使用的程序向量
+    prog <- unlist(lapply(new.res, function(x) x[4]))
+    # 各程序使用时间
+    time <- unlist(lapply(new.res, function(x) x[2]))
+    time <- as.numeric(time)
+    time[length(time)+1] <- opentime
+    time <- diff(time)
+ 
+    prog.time <- data.frame(prog=prog,time=time)
+    progtime <- dcast(prog.time,prog~., sum,value.var='time')
+    names(progtime) <- c('program','time')
+ 
+    # 使用的软件个数
+    numofsoft <- nrow(progtime)
+    # 真实使用时长
+    realtime <- sum(progtime$time,na.rm=T)
+    return(list(id=as.character(id),day=as.character(day),
+                clock = as.numeric(clock),opentime=opentime,
+                numofsoft = numofsoft,
+                realtime= realtime,progtime=progtime))
+}
+所有的文件名都已经存在file.name变量中，用上面建立好的函数data.get来提取第一份文件中的信息 
+data.get(file.name[1])

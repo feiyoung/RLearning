@@ -1,0 +1,30 @@
+# 基于mailR包实现R语言自动发送邮件，这段代码可以放在数值模拟最后，告诉你模拟情况。
+
+# 这里以163邮箱为例,首先需要开启smtp服务，在邮箱设置中完成，完成后可以得到一个授权码。
+# 将下面的邮箱和授权码，换成你自己的就可以了。
+
+if(is.element('mailR',row.names(installed.packages())) == F)
+  {install.packages('mailR') } # 检查R包是否安装好
+library(mailR)  
+sender = 'weidliu321@163.com' # 发件人 授权码：abcd123456
+recipients <- 'weidliu321@163.com' # 收件人
+title = "程序运行情况汇报"  
+body = "我是机器猫，现在向主人汇报程序运行已结束，请主人尽快来查看结果。主人也可以设置将运行
+结果以附件形式发送给您！"   # 邮件正文部分
+send.mail(  
+  from = sender,  
+  to = recipients,  
+  subject = title,  
+  body =body,  
+  encoding = "utf-8",  
+  html = TRUE,  
+  smtp = list(  
+    host.name = "smtp.163.com",   
+    port = 465,  
+    user.name = sender,  
+    passwd = 'abcd123456', # 授权码
+    ssl = TRUE  
+  ),  
+  authenticate = TRUE,  
+  send = TRUE  
+)  

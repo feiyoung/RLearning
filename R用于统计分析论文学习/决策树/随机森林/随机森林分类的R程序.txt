@@ -1,0 +1,40 @@
+#################################随机森林模型用于判别分类#############################
+## 有教师监督学的分类Classification:
+##案例一：
+data(iris)
+set.seed(71)
+iris.rf <- randomForest(Species ~ ., data=iris, importance=TRUE,
+                        proximity=TRUE)
+print(iris.rf)
+## Look at variable importance:
+round(importance(iris.rf), 2) #输出取两位小数的变量重要性指标值
+## Do MDS on 1 - proximity:
+iris.mds <- cmdscale(1 - iris.rf$proximity, eig=TRUE)
+op <- par(pty="s")
+pairs(cbind(iris[,1:4], iris.mds$points), cex=0.6, gap=0,
+      col=c("red", "green", "blue")[as.numeric(iris$Species)],
+      main="Iris Data: Predictors and MDS of Proximity Based on RandomForest")
+par(op)
+print(iris.mds$GOF)
+
+#案例二：
+#########################示例二：随机森林
+install.packages("randomForest") #首次使用需安装randomForest包
+library("randomForest") #将随机森林包载入内存
+DirFile2<-"E:\\学习\\R用于统计分析论文学习\\决策树\\MailShot.txt" #指定文件路径
+MailShot<-read.table(file=DirFile2,header=TRUE) #读入数据成为标准数据结构数据框
+MailShot<-MailShot[,-1] #将第一列移除
+set.seed(12345) #设置随机种子
+(rFM<-randomForest(MAILSHOT~.,data=MailShot,importance=TRUE)) #建立随机森林模型
+rFM$confusion #输出基于袋外观测的混淆矩阵
+Fit<-predict(rFM,MailShot) #进行预测
+ConfM5<-table(MailShot$MAILSHOT,Fit) #计算混淆矩阵
+(E5<-(sum(ConfM5)-sum(diag(ConfM5)))/sum(ConfM5)) #计算并输出错判率：0.03333333
+
+barplot(rFM$importance[,3],main="输入变量重要性测度(预测精度变化)指标柱形图") #绘出变量的重要性指标的条形图
+box() #给图像加上外边框
+importance(rFM,type=1) #输出第一类重要性指标（预测精度的平均减少量）2类是节点异质性指标的平均减少量
+#importance(rFM,type=2)#输出第二类
+#importance(rFM)#同时输出两类，以及对输入变量加入噪声后的预测置信度的平均变化
+varImpPlot(x=rFM, sort=TRUE, n.var=nrow(rFM$importance),main="输入变量重要性测度散点图")  #可视化变量重要性指标
+

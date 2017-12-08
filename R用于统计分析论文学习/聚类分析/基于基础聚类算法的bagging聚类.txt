@@ -1,0 +1,8 @@
+# ---------------------------案例1：
+data(iris)
+bc1 <- bclust(iris[,1:4], 3, base.centers=5) # 指定聚类数为3， 基础算法（kmeans）中心为5
+plot(bc1) # 绘制聚类图，和差异变化图
+
+table(clusters.bclust(bc1, 3)) # 各类的样本数
+centers.bclust(bc1, 3) # 各类的聚类中心
+boxplot(bc1, oneplot=F) # 绘制变量的箱线图

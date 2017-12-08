@@ -1,0 +1,86 @@
+install.packages("neuralnet")
+library("neuralnet")
+DirFile<-"E:\\学习\\R用于统计分析论文学习\\神经网络\\BuyOrNot.txt"
+BuyOrNot<-read.table(file=DirFile,header=TRUE) #数据读入
+
+##########neurealnet建立神经网络
+set.seed(12345) 
+(BPnet1<-neuralnet(Purchase~Age+Gender+Income,data=BuyOrNot,hidden=2,err.fct="ce",linear.output=FALSE,
+                )) #建立默认的BP神经网络
+(BPnet1<-neuralnet(Purchase~Age+Gender+Income,data=BuyOrNot,hidden=2,rep=1,err.fct="ce",linear.output=FALSE,
+          algorithm="backprop",learningrate=0.01)) #建立传统BP神经网络
+(BPnet1<-neuralnet(Purchase~Age+Gender+Income,data=BuyOrNot,hidden=2,err.fct="ce",linear.output=FALSE,
+          algorithm="rprop-")) #建立不回溯的弹性神经网络（默认是回溯的"rprop+"）
+(BPnet1<-neuralnet(Purchase~Age+Gender+Income,data=BuyOrNot,hidden=2,err.fct="sse",linear.output=FALSE,
+          algorithm="rprop-")) #建立不回溯的弹性神经网络（默认是回溯的"rprop+"）,且误差函数取“sse”
+BPnet1$result.matrix
+BPnet1$weight #训练结束时的权值
+BPnet1$startweights #初始权值
+
+########权值参数可视化
+plot(BPnet1) 
+#######输入变量重要性及可视化
+head(BPnet1$generalized.weights[[1]]) #查看广义权值
+par(mfrow=c(2,2))
+gwplot(BPnet1,selected.covariate="Age") #绘制该解释变量的广义权值的散点图
+gwplot(BPnet1,selected.covariate="Gender")
+gwplot(BPnet1,selected.covariate="Income")
+
+##########不同输入变量水平组合下的预测
+newData<-matrix(c(39,1,1,39,1,2,39,1,3,39,2,1,39,2,2,39,2,3),nrow=6,ncol=3,byrow=TRUE)
+new.output<-compute(BPnet1,covariate=newData)
+new.output$net.result #输出预测值
+
+############确定二分类的概率分割值
+install.packages("ROCR")
+library("ROCR")
+detach("package:neuralnet")
+summary(BPnet1$net.result[[1]])
+pred<-ROCR::prediction(predictions=as.vector(BPnet1$net.result),labels=BPnet1$response)
+par(mfrow=c(2,1))
+perf<-performance(pred,measure="tpr",x.measure="fpr") #利用pred计算真正率、假正率和对应概率分割值
+plot(perf,colorize=TRUE,print.cutoffs.at=c(0.2,0.45,0.46,0.47)) #会出图形
+perf<-performance(pred,measure="acc") #精度
+plot(perf) #纵坐标为精度，横坐标为概率分割值
+true.class<-BPnet1$response #提取被解释变量（相应变量）
+pred.class<-ifelse(BPnet1$net.result[[1]]>0.5,1,0) #利用概率分割值得到预测分类
+(ConfM.BP<-table(true.class,pred.class)) #混淆矩阵
+(Err.BP<-(sum(ConfM.BP)-sum(diag(ConfM.BP)))/sum(ConfM.BP)) #输出总误判率
+
+##############     nnet建立二分类神经网络
+install.packages("nnet")
+library("nnet")
+set.seed(1000)
+(BPnet2<-nnet(Purchase~Age+Gender+Income,data=BuyOrNot,size=2,entropy=TRUE,abstol=0.01))
+library("neuralnet")
+set.seed(1000)
+(BPnet3<-neuralnet(Purchase~Age+Gender+Income,data=BuyOrNot,
+  algorithm="backprop",learningrate=0.01,hidden=2,err.fct="ce",linear.output=FALSE))
+pred.class1<-predict(BPnet2,BuyOrNot,type="class")
+pred.class1<-factor(pred.class1,level=0:1) #将预测分类转化为因子
+true.class1<-as.factor(BuyOrNot$Purchase)
+(ConfM.BP2<-table(true.class1,pred.class1)) #混淆矩阵
+(Err.BP2<-(sum(ConfM.BP2)-sum(diag(ConfM.BP2)))/sum(ConfM.BP2)) #输出总误判率
+
+###############nnet建立多分类神经网络
+DirFile<-"E:\\学习\\R用于统计分析论文学习\\神经网络\\WineData.txt"
+WineData<-read.table(file=DirFile,header=TRUE)
+WineData<-WineData[,-1]
+WineData$quality<-as.factor(WineData$quality) #6个等级
+set.seed(1000)
+BPnet4<-nnet(quality~fixed+volatile+citric+residual              #多分类用nnet函数
+      +chlorides+free+total+density+ph+sulphates+alcohol,
+      data=WineData,size=2)
+Mout<-predict(BPnet4,WineData,type="class") #计算预测值
+Mpred<-factor(Mout,level=3:8) #将预测值转化为类别因子
+ConfuseMatrix<-table(WineData$quality,Mpred) #输出混淆矩阵
+(ErrorRate<-1-sum(diag(ConfuseMatrix))/sum(ConfuseMatrix)) #计算并输出误判率
+
+
+WineData<-read.table(file="WineData.txt",header=TRUE)        
+WineData<-WineData[,-1]
+set.seed(1000)
+BPnet5 <- neuralnet(quality~fixed+volatile+citric+residual    #当回归处理了
+      +chlorides+free+total+density+ph+sulphates+alcohol,
+      data=WineData,hidden=2,err.fct="sse",linear.output=FALSE)
+plot(BPnet5)

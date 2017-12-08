@@ -1,0 +1,5 @@
+#########################基于核函数的特征提取##############################
+
+data(promotergene)  #载入数据
+f <- kfa(~.,data=promotergene,features=2,kernel="rbfdot", kpar=list(sigma=0.01)) #特征提取
+plot(predict(f,promotergene),col=as.numeric(promotergene[,1])) #作图

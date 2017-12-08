@@ -1,0 +1,71 @@
+#下面介绍基于主轴因子法等另外五种构造因子分析模型的案例
+##说明：估计载荷矩阵的方法：除了基于主成分分析法的估计方法，还有fm='pa'表示用主轴因子法、"minres" （最小残#差法）、"wls"（带权最小平方法）、"gls"
+##（广义带权最小平方法）、"pa" （主轴因子法）、"ml"（极大似然法），均用默认的线性回归来估计因子得分系数并计算因子得分。估计因子得分的方法还有
+##Bartlett法、Thurstone法、tenBerge法等
+#****作者：独闯阳光道***************************************#
+#****邮箱: weiliu321@yahoo.com（欢迎交流经验）
+#****版本：w0.1*******************************************#
+#****时间：2015-3-28*************************************#
+
+rm(list=ls(all=T)) #清除环境变量
+test<-data.frame(
+  X1=c(148, 139, 160, 149, 159, 142, 153, 150, 151, 139,
+           140, 161, 158, 140, 137, 152, 149, 145, 160, 156,
+           151, 147, 157, 147, 157, 151, 144, 141, 139, 148),
+  X2=c(41, 34, 49, 36, 45, 31, 43, 43, 42, 31,
+           29, 47, 49, 33, 31, 35, 47, 35, 47, 44,
+           42, 38, 39, 30, 48, 36, 36, 30, 32, 38),
+  X3=c(72, 71, 77, 67, 80, 66, 76, 77, 77, 68,
+          64, 78, 78, 67, 66, 73, 82, 70, 74, 78,
+          73, 73, 68, 65, 80, 74, 68, 67, 68, 70),
+  X4=c(78, 76, 86, 79, 86, 76, 83, 79, 80, 74,
+           74, 84, 83, 77, 73, 79, 79, 77, 87, 85,
+           82, 78, 80, 75, 88, 80, 76, 76, 73, 78)
+  )#载入数据。
+library(psych) #利用psych包中的函数进行主成分分析
+test<-scale(test) #对原始数据无量纲化处理（标准化）
+##平行分析
+fa.parallel(test,fa="fa",n.iter=100,main="Screen plot with parallel analysis") #确定主因子个数nfactor
+
+##基于主轴因子法构造因子分析
+pc<-fa(test,nfactor=1,score=T,fm='pa',rotate='varimax') #当test为原数据时，score=T计算主因子得分,fm='pa'表示用主轴因子法构造因子分析模型。
+score<-as.vector(pc$score) #计算主因子得分
+weight<-pc$weights #求主因子得分系数
+##输出综合得分和排名
+PingJia1<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(test)[1],"名",sep=""),defen=sort(score,decreasing=T)) 
+
+##基于最小残差法的因子分析
+pc<-fa(test,nfactor=1,score=T,fm='minres',rotate='varimax') #当test为原数据时，score=T计算主因子得分,fm='minres'表示用最小残差法构造因子分析模型
+score<-as.vector(pc$score) #计算主因子得分
+weight<-pc$weights #求主因子得分系数
+##输出综合得分和排名
+PingJia2<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(test)[1],"名",sep=""),defen=sort(score,decreasing=T)) #
+
+##基于极大似然法的因子分析
+pc<-fa(test,nfactor=1,score=T,fm='ml',rotate='varimax') #当test为原数据时，score=T计算主因子得分,fm='ml'表示用极大似然法构造因子分析模型
+score<-as.vector(pc$score) #计算主因子得分
+weight<-pc$weights #求主因子得分系数
+##输出综合得分和排名
+PingJia3<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste0("第",1:dim(test)[1],"名"),defen=sort(score,decreasing=T))
+ 
+##基于带权最小平方法的因子分析
+pc<-fa(test,nfactor=1,score=T,fm='wls',rotate='varimax') #当test为原数据时，score=T计算主因子得分,fm='wls'表示用带权最小平方法构造因子分析模型
+score<-as.vector(pc$score) #计算主因子得分
+weight<-pc$weights #求主因子得分系数
+##输出综合得分和排名
+PingJia4<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste0("第",1:dim(test)[1],"名"),defen=sort(score,decreasing=T))
+ 
+##基于广义带权最小平方法的因子分析
+pc<-fa(test,nfactor=1,score=T,fm='gls',rotate='varimax') #当test为原数据时，score=T计算主因子得分,fm='gls'表示用广义带权最小平方法构造因子分析模型
+score<-as.vector(pc$score) #计算主因子得分
+weight<-pc$weights #求主因子得分系数
+##输出综合得分和排名
+PingJia5<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste0("第",1:dim(test)[1],"名"),defen=sort(score,decreasing=T))
+
+##对各种方法的评价得分进行相关分析，发现各种估计载荷矩阵的方法得到的结果相关性极高
+paiMing<-data.frame(PingJia1[,1],PingJia2[,1],PingJia3[,1],PingJia4[,1],PingJia5[,1]) #观察排名结果的差异
+rownames(paiMing)<-paste0("第",1:dim(test)[1],"名")
+colnames(paiMing)<-c("主轴因子法","最小残差法","极大似然法","带权最小平方法","广义带权最小平方法")
+print(paiMing) #各种方法排名的差异不大
+cor(cbind(PingJia1[,3],PingJia2[,3],PingJia3[,3],PingJia4[,3],PingJia5[,3])) #相关性分析
+

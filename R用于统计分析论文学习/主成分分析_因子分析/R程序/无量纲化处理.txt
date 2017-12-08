@@ -1,0 +1,38 @@
+#无量纲化处理程序案例
+#本案例来自叶宗裕《关于多指标综合评价中指标正向化和无量纲化方法的选择》【J】
+
+#-----------------------------1.先是利用均值化进行无量纲化处理
+
+xsdf<-c(81.3,94.7,84.7,95.2,93.2,98.5,92,86.5,89.9,84.6)
+khxzdf<-c(90.3,93.5,91.1,94,94.5,93.6,91.5,90.4,93,91.7)
+jshi<-data.frame(xsdf,khxzdf)
+jshi.wlgh<-apply(jshi,2,function(x) x/mean(x));jshi.wlgh#自编函数进行无量纲化处理
+#计算综合评分
+zhpf<-apply(jshi.wlgh,1,function(x) sum(x)/2);zhpf
+#zhpf<-apply(jshi.wlgh,1,function(x) x[1]*1/2+x[2]*1/2);zhpf#这是另一种编程方法。
+#求各位教师的综合排名
+names(zhpf) <- paste0('教师',1:10)
+jspm<-sort(zhpf,decreasing=T)
+mingci <- paste0('第',1:10,'名')
+jspm<- data.frame(jspm,mingci)
+
+
+#-----------------------------2.利用标准化方法进行无量纲化处理
+jshi.sdandrd<-scale(jshi)#进行无量纲化处理
+zhpf.sdandard<-apply(jshi.sdandrd,1,function(x)sum(x)/2);zhpf.sdandard
+names(zhpf.sdandard) <- paste0('教师',1:10)
+pm.sdandard<-sort(zhpf.sdandard,decreasing=T)
+mingci <- paste0('第',1:10,'名')
+(pm.standard <- data.frame(pm.sdandard, mingci))
+          
+ 
+#---------------------------3.利用极差正规化方法进行无量纲化处理
+jshi.jicha <- apply(jshi, 2, function(x) (x - min(x)) / (max(x) - min(x))) #极差正规化
+zhpf.jicha<-apply(jshi.jicha,1,function(x)sum(x)/2);zhpf.jicha
+names(zhpf.jicha) <- paste0('教师',1:10)
+pm.jicha<-sort(zhpf.jicha,decreasing=T)
+mingci <- paste0('第',1:10,'名')
+(pm.jicha <- data.frame(pm.jicha, mingci))
+
+#----------------------------3种无量纲化方法排名的比较
+data.frame(meanimise=rownames(jspm), standard=rownames(pm.standard), extramesub=rownames(pm.jicha), rank=mingci )

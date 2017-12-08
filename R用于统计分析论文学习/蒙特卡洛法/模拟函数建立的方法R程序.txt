@@ -1,0 +1,34 @@
+#-------------首先编写泛式函数
+sim.fun <- function(m, f, ...) #m模拟样本次数，f为需模拟的分布
+{
+	Sample <- 1:m
+	for(i in 1:m){
+ 	 Sample[i] <- f(...)
+ }
+ Sample
+}
+
+#------------用二项分布检验中心极限定理，编写函数生成二项分布随机数的标准化值
+f <- function(n=10, p=0.5) {s <- rbinom(1,n,p);(s-n*p)/sqrt(n*p*(1-p))}
+#---开始模拟
+x <- sim.fun(1000, f)
+hist(x, prob=T) #非常接近标准正态分布
+
+#-----------用均匀分布检验中心极限定理
+f <- function(n=10) (mean(runif(n)-1/2)/(1/sqrt(12*n)))
+x <- sim.fun(1000, f)
+hist(x, prob=T, main='n=10')#非常接近标准正态分布
+
+#-----------用指数分布检验中心极限定理
+f <- function(n, mu=10) ( mean(rexp(n, 1/mu)-mu) / (mu/sqrt(n)) )
+x <- seq(-3, 3, 0.01)
+par(mfrow=c(2,2))
+ hist(sim.fun(100, f, 1,10), prob=T, main='n=1')
+ points(x, dnorm(x, 0,1), type='l')
+ hist(sim.fun(100, f, 5,10), prob=T, main='n=5')
+ points(x, dnorm(x, 0,1), type='l')
+ hist(sim.fun(100, f, 10,10), prob=T, main='n=10')
+ points(x, dnorm(x, 0,1), type='l')
+ hist(sim.fun(100, f, 30,10), prob=T, main='n=30')
+ points(x, dnorm(x, 0,1), type='l')
+par(mfrow=c(1,1))

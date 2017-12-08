@@ -1,0 +1,20 @@
+#################################随机森林回归程序#############################
+## Regression:
+data(airquality)
+set.seed(131)  #设置随机数种子,使重抽样结果可以重现
+ozone.rf <- randomForest(Ozone ~ ., data=airquality, mtry=3,
+                         importance=TRUE, na.action=na.omit) #建立随机森林回归模型
+print(ozone.rf)
+## Show "importance" of variables: higher value mean more important:
+round(importance(ozone.rf), 2) #输出输入标量的重要性指标
+varImpPlot(ozone.rf,sort=T) #可视化输入变量的重要性指标
+predict(ozone.rf,airquality[148:153,2:6]) #用回归模型预测新的观察值
+
+
+#案例二：
+## "x" can be a matrix instead of a data frame:
+set.seed(17)
+x <- matrix(runif(5e2), 100)
+y <- gl(2, 50)
+(myrf <- randomForest(x, y))
+(predict(myrf, x))

@@ -1,0 +1,20 @@
+################泊松回归
+fileDir<-"E:\\学习\\R用于统计分析论文学习\\广义线性模型\\RFMData.txt"
+RFMData<-read.table(file=fileDir,header=TRUE)
+Fit<-glm(Frequency~Recency+Monetary,data=RFMData,family=poisson(link="log"))
+anova(Fit,test="Chisq")
+summary(Fit)
+exp(Fit$coefficients)
+
+###############泊松回归的过散布诊断
+RFMData<-read.table(file=fileDir,header=TRUE)
+Fit<-glm(Frequency~Recency+Monetary,data=RFMData,family=poisson(link="log"))
+Fit$deviance/Fit$df.residual #用剩余模型偏差除以自由度（样本量-参数个数）作为散布系数的估计
+
+install.packages("qcc")#利用qcc包中的过散布检验函数
+library("qcc")
+qcc.overdispersion.test(RFMData$Frequency,type="poisson")
+
+##检验表明模型出现了过散布的情况，因此利用准极大似然估计进行泊松回归分析：
+Fit<-glm(Frequency~Recency+Monetary,data=RFMData,family=quasipoisson(link="log"))
+summary(Fit)

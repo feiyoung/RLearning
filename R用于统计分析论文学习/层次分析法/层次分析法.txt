@@ -1,0 +1,39 @@
+
+rm(list=ls(all=T))#清除环境变量
+n1<-6;n2=3; #n1表示准则层对目标层的判断矩阵的阶数，n2表示方案层对准则层的判断矩阵的阶数 
+##载入准则层判断矩阵和方案层的判断矩阵 
+A<-read.csv('E:\\学习\\R用于统计分析论文学习\\层次分析法\\txt3.csv',header=F); #csv文档中数值必须为小数形式。
+##分离准则层判断矩阵和方案层的判断矩阵 
+
+a.zhunze<-as.matrix(A[1:n1,1:n1]) #准则层判断矩阵
+b.fangan<-list(); #用空列表来盛放方案层的判断矩阵 
+for(i in 1:n1)
+{
+b.fangan[[i]]<-as.matrix(A[(n1+1+(i-1)*n2):(n1+i*n2),1:n2]);
+}
+ri<-c(0,0,0.58,0.90,1.12,1.24,1.32,1.41,1.45);#一致性指标向量 
+a<-eigen(a.zhunze);
+a.value<-Re(a$values) #对特征值取实部
+lamda<-max(a.value);
+num<-which(a.value==lamda) #求最大特征值的下标
+a.vec<-Re(a$vectors)
+w0<-a.vec[,num]/sum(a.vec[,num])
+cr0<-(lamda-n1)/(n1-1)/ri[n1]
+w1<-matrix(0,3,6) #初始化w1，用于盛放单排序权重
+cr1<-c(rep(0,length=n1)) #初始化cr1，盛放随机一致性比率
+for(i in 1:n1)
+{
+b<-eigen(b.fangan[[i]]);
+b.value<-Re(b$values) #对特征值取实部
+lamda<-max(b.value);
+num<-which(b.value==lamda) #求最大特征值的下标
+b.vec<-Re(b$vectors)
+w1[,i]<-b.vec[,num]/sum(b.vec[,num])
+cr1[i]<-(lamda-n2)/(n2-1)/ri[n2]
+}
+cr<-cr1%*%w0
+ts<-w1%*%w0
+cr0
+cr1
+cr
+ts

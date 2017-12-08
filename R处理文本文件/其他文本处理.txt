@@ -1,0 +1,228 @@
+#------------中文日期数据的条件筛选
+(data1 <- data.frame('日期'=c('1月4日','1月5日','2月11日','2月22日'),
+             '成交价格'=c(3099,3101, 3302,2222)) )
+(subdata1 <- data1[grep('1月', data1[,1]), ] ) # 首先利用字符串匹配获取1月的数据
+subset(subdata1, 成交价格< 3100) # 其次获取价格低于3100的数据
+
+#----------------计算字符串向量中字符的个数
+x <- c("asfef", "qwerty", "yuiop[", "b", "stuff.blah.yech")
+nchar(x)
+# 5  6  6  1 15
+nchar(deparse(mean))
+# 18 17  <-- unless mean differs from base::mean
+
+x[3] <- NA; x
+nchar(x, keepNA= TRUE) #  5  6 NA  1 15
+nchar(x, keepNA=FALSE) #  5  6  2  1 15
+stopifnot(identical(nchar(x, "w", keepNA = NA), # 计算宽度
+                    nchar(x,      keepNA = FALSE)),
+          identical(is.na(x), is.na(nchar(x, keepNA=NA))))
+x <- c("Hellow", "World", "!") 
+nchar(x) 
+[1] 6 5 1
+length(x) # 注意两者的区别
+
+#-----------字符串的提取和替代
+substr("abcdef", 2, 4) #以第一个参数的长度为准
+substring("abcdef", 1:6, 1:6) # 以最长的参数为准
+## strsplit is more efficient ...
+
+substr(rep("abcdef", 4), 1:4, 4:5) 
+x <- c("asfef", "qwerty", "yuiop[", "b", "stuff.blah.yech") #
+substr(x, 2, 5) # 没那么长就返回空字符串
+substring(x, 2, 4:6)
+
+substring(x, 2) <- c("..", "+++") # 从第二个位置开始替代，要对右端的向量利用循环规则，使他的长度和x的长度相等。
+
+x
+
+#----------------字符串的拆分
+strsplit('afa gaga sadlss sdg',split='.')#按照任意字符分割字符串
+strsplit('afa gaga sadlss sdg',split='*')
+strsplit('afa gaga sadlss sdg',split='[a-z]')# split='[a-z]'表示按照a-z中任意一个字母分割数据
+strsplit('afa gaga sadlss sdg',split='s{2}')# split='s{2}'表示按照ss分割字符串
+strsplit('afa gaga sadlss sdg',split='^a')#匹配文本开始位置
+strsplit('afa gaga sadlss sdg[dagg]',split='[^afa]') #匹配非方括号中的任意字符
+strsplit('afa gaga sadlss sdg[dagg]',split='a|s') #从a、s中任选一个进行匹配，分割字符串
+strsplit('a.b.c.H.\ngh^G',split='[.^\n]') #查找元字符
+text <- "Hello Adam!\nHello Ava!"
+strsplit(text, ' ') #返回一个列表（含有一个元素）
+[[1]]
+[1] "Hello"        "Adam!\nHello" "Ava!"  
+ strsplit(text, ' ')[[1]][1] #输出列表中的第一个元素中的第一个子元素
+[1] "Hello"
+strsplit(text, '\\s') #\\s表示空白字符（包括空格、制表符、换行符等）
+[[1]]
+[1] "Hello" "Adam!" "Hello" "Ava!"
+unlist(strsplit(text, '\\s')) #将列表转化为向量
+[1] "Hello" "Adam!" "Hello" "Ava!"
+strsplit(text, '')
+[[1]]
+ [1] "H"  "e"  "l"  "l"  "o"  " "  "A"  "d"  "a"  "m"  "!"  "\n" "H"  "e" 
+[15] "l"  "l"  "o"  " "  "A"  "v"  "a"  "!"
+
+
+#-----------------字符串大小写字母的转化
+DNA <- "AtGCtttACC" 
+tolower(DNA)  #将字符串字母全部转化成小写字母
+toupper(DNA)  #转化成大写字母
+casefold(DNA, upper = FALSE) # upper = FALSE表示全部转化为小写字母
+chartr(old="Tt",new= "Uu", DNA) #T换成U,t换成u,用新的字符替换对应的旧的字符，实质就是查找替换 
+
+#------------------字符串连接
+paste("CK", 1:6, sep="") #等价于
+paste0("CK",1:6)
+ x <- list(a="aaa", b="bbb", c="ccc") 
+ y <- list(d=1, e=2) 
+ paste(x, y, sep="-") #较短的向量被循环使用 （循环规则）
+[1] "aaa-1" "bbb-2" "ccc-1"
+ z <- list(x,y) 
+ paste("T", z, sep=":") #z中2个元素分别与T连接 
+[1] "T:list(a = \"aaa\", b = \"bbb\", c = \"ccc\")"
+[2] "T:list(d = 1, e = 2)"     
+paste(x, y, sep="-", collapse='; ') #生成含有元素的字符串向量
+[1] "aaa-1; bbb-2; ccc-1"
+paste(x, collapse='; ') 
+[1] "aaa; bbb; ccc"
+
+
+
+#----------------字符串的匹配和替换
+grep("[a-z]", letters) # 查找含有第一个参数的第二参数的元素下标
+
+txt <- c("arm","foot","lefroo", "bafoobar")
+if(length(i <- grep("foo", txt)))
+   cat("'foo' appears at least once in\n\t", txt, "\n")
+i # 2 and 4
+txt[i]
+files <- list.files("c:/windows") ##下面查找以名字.exe结尾的文件
+ grep("\\.exe$", files)  #返回元素位置构成的整型向量（使用正则表达式进行匹配）
+[1] 11 24 26 29 30 46 56 84 85 93 94 97 99
+files[grep('\\.exe$', files)]
+grepl("\\.exe$", files) # 返回T或者F
+files[grepl("\\.exe$", files)] 
+##
+text <-c("Hellow, Adam!", "Hi, Adam!", "How are you, Adam.") 
+(weizhi<-regexpr("Adam", text) )#返回一个整型向量
+[1]  9  5 14 #表示第一字符串的第9个位置开始、第二个字符串的第5个位置开始
+attr(,"match.length")
+[1] 4 4 4
+attr(,"useBytes")
+[1] TRUE
+xinxi<-0
+for(i in 1:length(text)){
+xinxi[i]<- substring(text[i],weizhi[i],weizhi[i]+attr(weizhi,'match.length')[i]-1) #提取指定字符串的for循环
+}
+## 向量化方法
+xinxi <- sapply(1:length(text), function(i) substring(text[i],weizhi[i],weizhi[i]+attr(weizhi,'match.length')[i]-1))
+xinxi
+
+gregexpr("Adam", text) #返回一个列表
+gregexpr("Adam", text)[[2]]#输出该列表中第2个元素
+[1] 5
+attr(,"match.length")
+[1] 4
+attr(,"useBytes")
+[1] TRUE
+regexec("Adam", text)  #返回一个列表
+regexec("Adam", text)[[1]][1] #输出该列表中第1个元素的第一个子元素
+[1] 9
+
+
+## Double all 'a' or 'b's;  "\" must be escaped, i.e., 'doubled'
+gsub("([ab])", "\\1_\\1_", "abc and ABC")
+
+txt <- c("The", "licenses", "for", "most", "software", "are",
+  "designed", "to", "take", "away", "your", "freedom",
+  "to", "share", "and", "change", "it.",
+   "", "By", "contrast,", "the", "GNU", "General", "Public", "License",
+   "is", "intended", "to", "guarantee", "your", "freedom", "to",
+   "share", "and", "change", "free", "software", "--",
+   "to", "make", "sure", "the", "software", "is",
+   "free", "for", "all", "its", "users")
+( i <- grep("[gu]", txt) ) # indices
+stopifnot( txt[i] == grep("[gu]", txt, value = TRUE) )
+
+## Note that in locales such as en_US this includes B as the
+## collation order is aAbBcCdEe ...
+(ot <- sub("[b-e]",".", txt))
+txt[ot != gsub("[b-e]",".", txt)]#- gsub does "global" substitution
+
+txt[gsub("g","#", txt) !=
+    gsub("g","#", txt, ignore.case = TRUE)] # the "G" words
+
+regexpr("en", txt)
+
+gregexpr("e", txt)
+
+## Using grepl() for filtering
+## Find functions with argument names matching "warn":
+findArgs <- function(env, pattern) {
+  nms <- ls(envir = as.environment(env))
+  nms <- nms[is.na(match(nms, c("F","T")))] # <-- work around "checking hack"
+  aa <- sapply(nms, function(.) { o <- get(.)
+               if(is.function(o)) names(formals(o)) })
+  iw <- sapply(aa, function(a) any(grepl(pattern, a, ignore.case=TRUE)))
+  aa[iw]
+}
+findArgs("package:base", "warn")
+
+## trim trailing white space
+str <- "Now is the time      "
+sub(" +$", "", str)  ## spaces only
+## what is considered 'white space' depends on the locale.
+sub("[[:space:]]+$", "", str) ## white space, POSIX-style
+## what PCRE considered white space changed in version 8.34: see ?regex
+sub("\\s+$", "", str, perl = TRUE) ## PCRE-style white space
+
+## capitalizing
+txt <- "a test of capitalizing"
+gsub("(\\w)(\\w*)", "\\U\\1\\L\\2", txt, perl=TRUE)
+gsub("\\b(\\w)",    "\\U\\1",       txt, perl=TRUE)
+
+txt2 <- "useRs may fly into JFK or laGuardia"
+gsub("(\\w)(\\w*)(\\w)", "\\U\\1\\E\\2\\U\\3", txt2, perl=TRUE)
+ sub("(\\w)(\\w*)(\\w)", "\\U\\1\\E\\2\\U\\3", txt2, perl=TRUE)
+
+## named capture
+notables <- c("  Ben Franklin and Jefferson Davis",
+              "\tMillard Fillmore")
+# name groups 'first' and 'last'
+name.rex <- "(?<first>[[:upper:]][[:lower:]]+) (?<last>[[:upper:]][[:lower:]]+)"
+(parsed <- regexpr(name.rex, notables, perl = TRUE))
+gregexpr(name.rex, notables, perl = TRUE)[[2]]
+parse.one <- function(res, result) {
+  m <- do.call(rbind, lapply(seq_along(res), function(i) {
+    if(result[i] == -1) return("")
+    st <- attr(result, "capture.start")[i, ]
+    substring(res[i], st, st + attr(result, "capture.length")[i, ] - 1)
+  }))
+  colnames(m) <- attr(result, "capture.names")
+  m
+}
+parse.one(notables, parsed)
+
+## Decompose a URL into its components.
+## Example by LT (http://www.cs.uiowa.edu/~luke/R/regexp.html).
+x <- "http://stat.umn.edu:80/xyz"
+m <- regexec("^(([^:]+)://)?([^:/]+)(:([0-9]+))?(/.*)", x)
+m
+regmatches(x, m)
+## Element 3 is the protocol, 4 is the host, 6 is the port, and 7
+## is the path.  We can use this to make a function for extracting the
+## parts of a URL:
+URL_parts <- function(x) {
+    m <- regexec("^(([^:]+)://)?([^:/]+)(:([0-9]+))?(/.*)", x)
+    parts <- do.call(rbind,
+                     lapply(regmatches(x, m), `[`, c(3L, 4L, 6L, 7L)))
+    colnames(parts) <- c("protocol","host","port","path")
+    parts
+}
+URL_parts(x)
+
+## There is no gregexec() yet, but one can emulate it by running
+## regexec() on the regmatches obtained via gregexpr().  E.g.:
+pattern <- "([[:alpha:]]+)([[:digit:]]+)"
+s <- "Test: A1 BC23 DEF456"
+lapply(regmatches(s, gregexpr(pattern, s)), 
+       function(e) regmatches(e, regexec(pattern, e)))

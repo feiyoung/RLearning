@@ -1,0 +1,92 @@
+
+caret::knn3		k-Nearest Neighbour Classification
+caret::knnreg		k-Nearest Neighbour Regression
+caret::predict.knn3		Predictions from k-Nearest Neighbors
+caret::predict.knnreg		Predictions from k-Nearest Neighbors Regression Model
+
+class::knn		k-Nearest Neighbour Classification
+class::knn.cv		k-Nearest Neighbour Cross-Validatory Classification
+class::knn1		1-nearest neighbour classification
+
+DMwR::dist.to.knn		An auxiliary function of 'lofactor()'
+DMwR::kNN		k-Nearest Neighbour Classification
+DMwR::knnImputation		Fill in NA values with the values of the nearest neighbours
+
+ipred::ipredknn		k-Nearest Neighbour Classification
+ipred::predict.ipredknn		Predictions from k-Nearest Neighbors
+VIM::gowerD		k-Nearest Neighbour Imputation
+
+
+#---------------------此处演示4个封装R包的kNN判别分类,它的回归用法放在回归文件夹中
+#---caret包
+library(caret)
+irisFit1 <- knn3(Species ~ ., iris) # formula form of S3 method
+irisFit2 <- knn3(as.matrix(iris[, -5]), iris[,5]) # matrix form of S3 method
+predict(object=irisFit1, newdata=iris[1:10,-5], type='class') # predict the class of newdata
+predict(object=irisFit1, newdata=iris[1:10,-5], type='prob') # predict the portion of vote for all class of newdata
+
+data(iris3)
+train <- rbind(iris3[1:25,,1], iris3[1:25,,2], iris3[1:25,,3])
+test <- rbind(iris3[26:50,,1], iris3[26:50,,2], iris3[26:50,,3])
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+knn3Train(train, test, cl, k = 5, prob = TRUE) 
+
+#------------class包
+library(class)
+#---------------------Example one(kNN)
+train <- rbind(iris3[1:25,,1], iris3[1:25,,2], iris3[1:25,,3])
+test <- rbind(iris3[26:50,,1], iris3[26:50,,2], iris3[26:50,,3])
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+knn(train, test, cl, k = 3, prob=TRUE) # create the kNN discriminatory model
+attributes(.Last.value)
+K <- 1:10
+result <- sapply(X=K,FUN=knn, train=train, test=test, cl=cl)
+#------compute the accuracy
+ErrorRate <- function(cl, x){
+   x <- as.factor(x)
+   1-sum(x==cl)/length(cl)
+}
+ErRe <- apply(result,2,ErrorRate,cl=cl)
+library(ggplot2)
+DF <- data.frame(K=K, Errorrate=ErRe)
+qplot(K, Errorrate,data=DF,geom='line',xlab='k value',ylab='error rate',
+ main='test dataset vs k')
+#--------------------Example Two(1NN)
+train <- rbind(iris3[1:25,,1], iris3[1:25,,2], iris3[1:25,,3])
+test <- rbind(iris3[26:50,,1], iris3[26:50,,2], iris3[26:50,,3])
+cl <- factor(c(rep("s",25), rep("c",25), rep("v",25)))
+knn1(train, test, cl) # create the 1NN discriminatory model
+#-------------------Example Three(CV leave one out)
+train <- rbind(iris3[,,1], iris3[,,2], iris3[,,3])
+cl <- factor(c(rep("s",50), rep("c",50), rep("v",50)))
+knn.cv(train, cl, k = 3, prob = TRUE) # cross validation
+attributes(.Last.value)
+
+
+#---------------DMwR包
+library(DMwR)
+## A small example with the IRIS data set
+data(iris)
+
+## Split in train + test set
+idxs <- sample(1:nrow(iris),as.integer(0.7*nrow(iris)))
+trainIris <- iris[idxs,]
+testIris <- iris[-idxs,]
+
+## A 3-nearest neighbours model with no normalization
+(nn3 <- kNN(Species ~ .,train=trainIris,test=testIris,norm=T,k=3) )
+
+## The resulting confusion matrix
+table(testIris[,'Species'],nn3)
+
+## Now a 5-nearest neighbours model with normalization
+nn5 <- kNN(Species ~ .,trainIris,testIris,norm=TRUE,k=5)
+
+## The resulting confusion matrix
+table(testIris[,'Species'],nn5)
+
+#---------------ipred包
+library(ipred)
+
+irisFit <- ipredknn(Species ~ ., data=iris, k=7) # set up the model
+predict(object=irisFit, newdata=iris[40:60,], type= 'class')  # predict the new data

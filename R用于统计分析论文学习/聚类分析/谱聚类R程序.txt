@@ -1,0 +1,80 @@
+################谱聚类分析####################### 
+require(kernlab)
+data(spirals)#载入数据
+sc <- specc(spirals, centers = 2) #进行谱聚类，2表示聚类的数
+plot(spirals, col=sc)  #画出图像
+sc   #输出结果
+Spectral Clustering object of class "specc" 
+
+ Cluster memberships: 
+ 
+2 2 1 1 2 1 1 1 2 1 1 2 2 1 1 2 2 2 2 2 1 1 2 1 1 1 1 2 2 2 1 2 1 1 2 1 2 1 2 2 1 1 1 1 2 2 2 2 2 1 2 1 2 2 1 1 1 2 2 2 2 2 1 1 2 1 2 2 2 1 1 2 1 1 1 2 2 2 2 1 2 1 2 1 2 2 2 2 2 2 1 2 2 1 1 1 2 1 1 1 1 2 2 2 1 1 2 1 1 1 2 1 2 2 2 2 1 1 2 2 1 2 2 2 1 2 1 2 2 2 2 2 1 1 1 1 1 2 2 2 1 1 2 1 2 2 2 1 1 1 2 1 1 1 1 1 1 2 2 2 2 1 2 1 2 2 2 1 2 2 2 2 1 2 1 2 2 2 1 1 2 2 2 1 1 1 2 2 1 1 1 1 1 1 1 1 2 2 2 2 1 2 1 1 2 1 2 1 1 1 1 1 2 1 2 1 2 1 2 2 2 1 1 1 1 2 2 2 1 2 2 1 1 1 1 1 2 2 1 1 1 1 2 2 2 1 1 1 1 1 1 2 2 1 1 2 2 2 2 2 2 2 1 1 1 1 2 1 2 1 2 2 1 1 1 2 1 2 2 2 2 1 1 2 1 2 1 1 1 2 1 2 1 1 2 2 1 1 1 2 
+ 
+Gaussian Radial Basis kernel function. 
+ Hyperparameter : sigma =  367.501471756435 
+
+Centers:  
+            [,1]       [,2]
+[1,] -0.01770984  0.1775137
+[2,]  0.01997201 -0.1761483
+
+Cluster size:  
+[1] 150 150
+
+Within-cluster sum of squares:  
+[1] 118.1182 117.3429
+
+#案例二：
+x<-rbind(matrix(rnorm(100,sd=0.3),ncol=2),matrix(rnorm(100,mean=1,sd=0.3),ncol=2))
+sc <- specc(x, centers = 2)
+sc
+ plot(x, col=sc)
+######################结果输出显示################################
+Spectral Clustering object of class "specc" 
+
+ Cluster memberships: 
+ 
+1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 
+ 
+Gaussian Radial Basis kernel function. 
+ Hyperparameter : sigma =  40.7638610402046 
+
+Centers:  
+           [,1]        [,2]
+[1,] 0.01638721 -0.03936638
+[2,] 0.99306240  0.95533705
+
+Cluster size:  
+[1] 50 50
+
+Within-cluster sum of squares:  
+[1]  9.899544 10.440708
+
+#案例三：
+data(iris)
+iris1<-as.matrix(iris[,-5])
+sc <- specc(iris1, centers = 3)
+sc
+######################结果输出显示################################
+Spectral Clustering object of class "specc" 
+
+ Cluster memberships: 
+ 
+3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 
+ 
+Gaussian Radial Basis kernel function. 
+ Hyperparameter : sigma =  24.9999999999872 
+
+Centers:  
+         [,1]     [,2]     [,3]     [,4]
+[1,] 6.230612 2.853061 4.872449 1.667347
+[2,] 7.800000 3.800000 6.550000 2.100000
+[3,] 5.006000 3.428000 1.462000 0.246000
+
+Cluster size:  
+[1] 98  2 50
+
+Within-cluster sum of squares:  
+[1] 2608.252   54.175 1313.240
+
+

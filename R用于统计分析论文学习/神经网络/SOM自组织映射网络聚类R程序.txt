@@ -1,0 +1,37 @@
+#################################
+#install.packages("kohonen")
+library("kohonen")
+DirFile<-"E:\\学习\\R用于统计分析论文学习\\神经网络\\WineData.txt"
+WineData<-read.table(file=DirFile,header=TRUE)
+WineData.sc<-WineData[,-c(1,13)] #移除第一列和13列
+WineData.sc<-scale(WineData.sc,center=TRUE,scale=TRUE) #标准化处理
+set.seed(12345) #设置随机种子
+(Wine.som <- som(data=WineData.sc,grid=somgrid(xdim=5,ydim=4,topo="rectangular"))) #建立SOM模型
+summary(Wine.som)
+par(mfrow=c(1,2))
+plot(Wine.som,main="红酒SOM网络聚类结果")
+plot(Wine.som,type="changes",main="红酒SOM网络聚类评价图")
+
+
+##############拓展SOM网络预测
+WineData<-read.table(file=DirFile,header=TRUE)
+WineData.sc<-WineData[,-c(1,13)]
+WineData.sc<-scale(WineData.sc,center=TRUE,scale=TRUE)
+library("kohonen")
+set.seed(12345)
+#Pre.som<-xyf(data=WineData.sc,Y=classvec2classmat(WineData$quality),contin=FALSE,
+#   xweight=0.5,grid=somgrid(2,4,"rectangular"))
+Pre.som<-xyf(data=WineData.sc,Y=scale(WineData$quality,center=TRUE,scale=TRUE),
+  contin=TRUE,xweight=0.5,grid=somgrid(xdim=5,ydim=4,topo="rectangular"))
+summary(Pre.som)
+par(mfrow=c(2,2))
+plot(Pre.som,type="counts",main="红酒拓展SOM聚类各类别样本量")
+plot(Pre.som,type="quality",main="红酒拓展SOM聚类类内平均距离")
+plot(Pre.som,type="code")
+
+par(mfrow=c(2,1))
+plot(Pre.som,type="changes",main="红酒拓展SOM网络聚类评价图")
+qualityMean<-mean(WineData$quality)
+qualitySd<-sd(WineData$quality)
+quality.pre<-predict(Pre.som)$unit.prediction*qualitySd+qualityMean
+plot(Pre.som,type="property",property=quality.pre,main="红酒拓展SOM聚类预测等级评分")

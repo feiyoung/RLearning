@@ -1,0 +1,15 @@
+#-------------kNN»Ø¹éÄ£ÐÍ
+#---------Example One
+library(caret)
+data(BloodBrain) # BloodBrain include a data.frame bbbDescr and a vector logBBB
+## sample the train dataset
+inTrain <- createDataPartition(logBBB, p = .8)[[1]]
+trainX <- bbbDescr[inTrain,] 
+trainY <- logBBB[inTrain]
+## the reminder as the test dataset
+testX <- bbbDescr[-inTrain,]
+testY <- logBBB[-inTrain]
+
+fit <- knnreg(trainX, trainY, k = 3) # create the kNN regression model 
+pred <- predict(fit, testX) # predict the new data
+plot(testY, pred)   

@@ -1,0 +1,68 @@
+#---------------------示例1:利用adabag包中的boosting建立组合模型
+##载入数据
+install.packages("adabag")
+libraray(rpart)
+library("adabag") #载入adabag包
+DirFile2<-"E:\\学习\\R用于统计分析论文学习\\决策树\\MailShot.txt" #指定文件路径
+MailShot<-read.table(file=DirFile2,header=TRUE) #读入数据成为标准数据结构数据框
+MailShot<-MailShot[,-1] #将第一列移除
+##开始建立模型预测
+Ctl<-rpart.control(minsplit=20,maxcompete=4,maxdepth=30,cp=0.01,xval=10) #设置决策树的控制参数，xval=10表示10折交叉验证
+#我的参数设置
+Ctl<-rpart.control(minsplit=2,maxcompete=4,xval=10,maxdepth=10,cp=0) #用户自己设置决策树的控制参数
+set.seed(12345) #设置随机数种子
+BoostM<-boosting(MAILSHOT~.,data=MailShot,boos=TRUE,mfinal=25,coeflearn="Breiman",control=Ctl) #建立boosting模型
+BoostM$importance #输出变量的重要性指标
+ConfM4<-table(MailShot$MAILSHOT,BoostM$class) #计算混淆矩阵
+(E4<-(sum(ConfM4)-sum(diag(ConfM4)))/sum(ConfM4)) #计算并输出预测误差，即误判率。 原作者：0.02666667  我的参数设置：0 误差为0
+
+#---------------------实例二：
+## rpart library should be loaded
+data(iris) # load data
+iris.adaboost <- boosting(Species~., data=iris, boos=TRUE, mfinal=5) # model the boosting method
+iris.adaboost # output the result
+iris.pred <- predict(iris.adaboost,iris[1:5,]) # 他可以对新样本进行分类
+iris.pred$confusion # confusion matrix
+iris.pred$error # prediction error
+
+#---------------------实例三：
+## Data Vehicle (four classes) 
+data(Vehicle)
+str(Vehicle)
+l <- length(Vehicle[,1])
+sub <- sample(1:l,2*l/3)
+mfinal <- 15 
+maxdepth <- 5
+
+Vehicle.rpart <- rpart(Class~.,data=Vehicle[sub,],maxdepth=maxdepth)
+Vehicle.rpart.pred <- predict(Vehicle.rpart,newdata=Vehicle[-sub, ],type="class")
+tb <- table(Vehicle.rpart.pred,Vehicle$Class[-sub])
+error.rpart <- 1-(sum(diag(tb))/sum(tb))
+tb
+error.rpart
+
+Vehicle.adaboost <- boosting(Class ~.,data=Vehicle[sub, ],mfinal=mfinal, coeflearn="Zhu",
+	control=rpart.control(maxdepth=maxdepth))
+Vehicle.adaboost.pred <- predict.boosting(Vehicle.adaboost,newdata=Vehicle[-sub, ])
+Vehicle.adaboost.pred$confusion
+Vehicle.adaboost.pred$error
+
+#comparing error evolution in training and test set
+errorevol(Vehicle.adaboost,newdata=Vehicle[sub, ])->evol.train
+errorevol(Vehicle.adaboost,newdata=Vehicle[-sub, ])->evol.test
+
+plot.errorevol(evol.test,evol.train)
+
+#-----------------------交叉验证：
+## rpart library should be loaded
+data(iris)
+iris.boostcv <- boosting.cv(Species ~ ., v=2, data=iris, mfinal=10, 
+control=rpart.control(cp=0.01)) # cross validation for boosting combination model
+iris.boostcv[-1] # output the other element except for the first
+
+## rpart and mlbench libraries should be loaded
+## Data Vehicle (four classes) 
+data(Vehicle)
+Vehicle.boost.cv <- boosting.cv(Class ~.,data=Vehicle,v=5, mfinal=10, coeflearn="Zhu",
+control=rpart.control(maxdepth=5))
+Vehicle.boost.cv[-1]

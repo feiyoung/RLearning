@@ -1,0 +1,29 @@
+
+##----------------------------- 案例1：仅含有分类型变量 Categorical data only:
+data(HouseVotes84, package = "mlbench")
+         #其中HouseVotes84为435个样本，17个变量，全为名义变量的判别分类
+model <- naiveBayes(Class ~ ., data = HouseVotes84)
+predict(model, HouseVotes84[1:10,])
+predict(model, HouseVotes84[1:10,], type = "raw")
+pred <- predict(model, HouseVotes84)
+table(pred, HouseVotes84$Class)
+
+## using laplace smoothing:
+model <- naiveBayes(Class ~ ., data = HouseVotes84, laplace = 3)
+pred <- predict(model, HouseVotes84[,-1])
+table(pred, HouseVotes84$Class)
+
+
+##---------------案例二：联列表数据 Example of using a contingency table:
+data(Titanic) #联列表
+m <- naiveBayes(Survived ~ ., data = Titanic)
+m
+predict(m, as.data.frame(Titanic))
+
+##---------------案例3： 数值型预报变量 Example with metric predictors:
+data(iris)
+m <- naiveBayes(Species ~ ., data = iris)
+## alternatively:
+m <- naiveBayes(iris[,-5], iris[,5])
+m
+table(predict(m, iris), iris[,5])

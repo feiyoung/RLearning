@@ -1,0 +1,47 @@
+#典型相关分析案例1(无数据，理论上的程序)
+invest<-read.table("E:/学习/R用于统计分析论文学习/典型相关分析/invest.txt")
+invest<-invest[,-1]
+names(invest)<-c("x1", "x2", "x3", "x4", "x5", "x6",
+"y1", "y2", "y3", "y4", "y5")
+ca<-cancor(invest[, 1:6], invest[, 7:11])#进行典型相关分析
+#计算数据在典型变量下的得分
+U<-as.matrix(invest[,1:6])%*%ca$xcoef #xcoef为典型权重系数
+V<-as.matrix(invest[,7:11])%*%ca$ycoef
+##典型结构分析
+UV<-data.frame(U1=U[,1],V1=V[,1])
+cor(cbind(UV,invest))[1:2,] #计算典型载荷系数,可以与对应典型权重系数符号不同
+##典型变量的回归分析
+lm.UV<-lm(V1~U1,data=UV)
+summary(lm.UV) 
+#画出U1、V1和U5、V5为组标的数据散点图
+plot(U[,1],V[,1],xlab='U1',ylab='V1')
+plot(U[,5],V[,5],xlab='U5',ylab='V5')
+#由散点图可知：第一典型相关变量分布在一条直线附近，第5典型相关变量分布很散。
+#典型变量相关系数检验的R程序
+#编写Chisq(卡方)检验函数
+corcoef.test<-function(r,n,p,q,alpha=0.1)#r为相关系数，n为样本个数，且n>p+q
+m<-length(r);Q<-rep(0,m);
+lambda<-1;
+for(k in m:1)
+{
+ lambda<-lambda*(1-r[k]^2)
+ Q[k]<--log(lambda)
+}
+s<-0;i<-m;
+for(k in 1:m)
+{
+ Q[k]<-(n-k+1-1/2*(p+q+3)+s)*Q[k]
+chi<-1-pchisq(Q[k],(p-k+1)*(q-k+1))
+ if(chi>alpha)
+{
+ i<-k-1;break
+}
+s<-s+1/r[k]^2
+}
+i#显示输出结果，选用第几对典型变量。
+#进行检验
+source('E:/R/corcoef.test.R')
+corcoef.test(r=ca$cor,n=28,p=6,q=5)
+[1] 1
+#表示选择第一个典型相关变量就足够了。
+

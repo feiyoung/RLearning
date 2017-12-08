@@ -1,0 +1,36 @@
+有点作假的感觉，不能乱用
+#----------------------批量填写指定格式的“调查问卷.txt”N份-------------
+setwd('E:\\学习\\R处理文本文件\\批量读取txt文档')
+Wenjuan <- list()  # 初始化一个列表，用于放每份问卷的内容
+N <- 2  # 设定问卷文件的份数 
+#---------问卷复制和读取问卷的内容
+for(i in 1:N){
+ A <- paste0('调查问卷',i,'.txt') #设置每份复制的问卷的文件名
+ file.remove(A) #移除文件
+ file.append(A, '调查问卷.txt') # 将文件“调查问卷.txt”复制N份
+ Wenjuan[[i]] <- readLines(A, encoding ="UTF-8") #读取问卷的内容，放入列表的元素中
+}
+#--------------------对所有问卷文件进行填写--------------------------#
+
+#-----只有第1题和7为A和B选项，第3题为A，B,C选项，其他为A,B,C,D的选项
+for(j in 1:N){ 
+for(ii in 1:length(Wenjuan[[j]]) ){ 
+ 
+ if(ii ==3 || ii==27 ){  #对指定行进行特殊处理
+ Item17 <- sample(c('A','B'),1) # 从A,B中选取一个
+ Wenjuan[[j]][ii]<-sub('（  ）',paste0('（ ',Item17,' ）'), Wenjuan[[j]][ii]) # 利用替换法进行答案填写
+ }
+ else if(ii == 10){
+  Item3 <- sample(c('A','B','C'),1, prob=c(0.1,0.4,0.5))
+  Wenjuan[[j]][ii]<-sub('（  ）',paste0('（ ',Item3,' ）'), Wenjuan[[j]][ii])
+  }
+ else{
+  Item <- sample(c('A','B','C','D'),1,prob=c(0.1,0.15,0.5,0.25))
+  Wenjuan[[j]][ii]<-sub('（  ）',paste0('（ ',Item,' ）'), Wenjuan[[j]][ii])
+  }
+}
+#---------问卷内容填写完成后，写入到txt文件中，然后修改txt文件的扩展名为.doc
+write.table(Wenjuan[[j]],paste0('问卷',j,'.txt'), row.names=F, col.names=F,quote = F) #写入到.txt文件中，quote=F表示去掉引号
+file.rename(paste0('问卷',j,'.txt'),sub("txt","doc",paste0('问卷',j,'.txt'))) #修改扩展名
+}
+#---------------------------于是，问卷的填写结束-------------------------#

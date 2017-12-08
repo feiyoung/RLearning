@@ -1,0 +1,45 @@
+############广义线性模型的交叉验证
+fileDir<-"E:\\学习\\R用于统计分析论文学习\\广义线性模型\\CarData.txt"
+CarData<-read.table(file=fileDir,header=TRUE)
+############################################################################
+##缺省值处理（刘伟添加的操作，原作者直接忽略含缺省值的观测值）
+sum(!complete.cases(CarData))#计算含有缺省观测值的个数
+CarData[!complete.cases(CarData),] #查看缺省值的信息
+str(CarData) #查看该数据框的信息
+#1.利用DMwR包的函数计算相似度来填补缺省值（非常方便）
+CarData2<-DMwR::knnImputation(CarData,k=10) #取最相似的10个的带权均值。
+CarData2[!complete.cases(CarData),] #查看填充好的含缺失的观测值
+#2.回归插补方法
+symnum(cor(na.omit(CarData)[,1:8])) #相关分析
+lm.hp<-lm(horsepower~MPG+weight+cylinders+displacement+acceleration,data=na.omit(CarData))
+summary(lm.hp) #说明线性回归非常好，通过检验
+sub<-which(!complete.cases(CarData)) ##取出含缺省值的观测值的行标
+CarData[sub,'horsepower']<-round(predict(lm.hp,CarData[sub,c                       ('MPG','weight','cylinders','displacement','acceleration')]),digits=1)
+CarData[sub,]#查看填充好的含缺失的观测值
+###################################填补完成################################
+##原作者的做法
+CarData$ModelYear<-as.factor(CarData$ModelYear)
+CarData<-na.omit(CarData) #忽略含有缺省值的样本观测值
+library("boot") #载入boot包
+Fit<-glm(log(MPG)~weight+horsepower,data=CarData,family=gaussian(link="identity"))
+#此处的广义线性模型即为一般线性回归模型lm，只是因变量做了变换。因为其分布为正态分布，连接函数为恒等连接函数
+sum(Fit$residuals^2)/Fit$df.residual   #模型的预测误差（即残差的方差）
+set.seed(12345)
+boot::cv.glm(data=CarData,glmfit=Fit,K=8)$delta   #8折-交叉验证给出的模型的预测误差估计
+#############################################################################
+##刘伟的做法1
+CarData2$ModelYear<-as.factor(CarData2$ModelYear)
+Fit<-glm(log(MPG)~weight+horsepower,data=CarData2,family=gaussian(link="identity"))
+sum(Fit$residuals^2)/Fit$df.residual   #模型的预测误差
+set.seed(12345)
+boot::cv.glm(data=CarData2,glmfit=Fit,K=8)$delta   #8折-交叉验证和留一交叉验证给出的模型的预测误差估计
+##该方法比原来的误差更小了
+
+##刘伟的做法2
+CarData$ModelYear<-as.factor(CarData$ModelYear)
+Fit<-glm(log(MPG)~weight+horsepower,data=CarData,family=gaussian(link="identity"))
+sum(Fit$residuals^2)/Fit$df.residual   #模型的预测误差
+set.seed(12345)
+boot::cv.glm(data=CarData,glmfit=Fit,K=8)$delta   #8折-交叉验证给出的模型的预测误差估计
+##比原作者的方法的误差减小了
+################################################################################

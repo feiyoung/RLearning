@@ -1,0 +1,155 @@
+###################分类支持向量机############################
+#案例一：svm函数，相当于判别分析
+require(kernlab)
+require(e1071)
+data(iris)#载入数据
+attach(iris)#数据框载入内存
+
+## 分类模型（classification model）
+# default with factor response:
+model <- svm(Species ~ ., data = iris)#SVM函数有公式形式和数据形式，此为公式形式。
+
+# alternatively the traditional interface:
+x <- subset(iris, select = -Species)##用于训练的解释变量（因变量）
+y <- Species##用于训练的被解释变量
+model <- svm(x, y) #SVM的数据形式，多用此形式。
+
+print(model)#输出显示SVM模型结果
+summary(model)#汇总
+
+# 用训练样本进行检验（test with train data）
+pred <- predict(model, x)
+# (same as:)
+#pred <- fitted(model)
+
+# 检验精确度（Check accuracy）:
+(ConfuseMatrix<-table(pred, y)) #构造混淆矩阵
+prop.table(ConfuseMatrix,2) #按列计算比例，对角线上值为各类的预测精度
+
+# compute decision values and probabilities:
+pred <- predict(model, x, decision.values = TRUE)
+attr(pred, "decision.values")[1:4,]
+
+# 可视化（visualize (classes by color, SV by crosses)）:
+plot(cmdscale(dist(iris[,-5])),
+     col = as.integer(iris[,5]),
+     pch = c("o","+")[1:150 %in% model$index + 1])#as.integer是将因子水平变成整数123
+
+####################################k折交叉验证检验模型的稳定性##############################
+require(DMwR)
+cv.svm<-function(form,train,test,...){
+m<-svm(form,train)
+p<-predict(m,test)
+sum(p==resp(form,test))/length(p)}
+res<-experimentalComparison(c(dataset(Species~.,iris,'Species')),c(variants('cv.svm')),cvSettings(8,10,1234))
+summary(res)
+##########################显示输出结果################################
+#从结果可以看出平均正确分类率达到0.96000000，最小正确率达0.86666667，经k折交叉验证，说明该模型可靠稳定
+
+== Summary of a  Cross Validation  Experiment ==
+
+ 8 x 10 - Fold Cross Validation run with seed =  1234 
+
+* Data sets ::  Species
+* Learners  ::  cv.svm.v1
+
+* Summary of Experiment Results:
+
+
+-> Datataset:  Species 
+
+        *Learner: cv.svm.v1 
+              [,1]
+avg     0.96000000
+std     0.04814418
+min     0.86666667
+max     1.00000000
+invalid 0.00000000
+
+
+
+#案例二：ksvm函数，相当于判别分析
+ set.seed(123)#设置随机数种子
+ x <- rbind(matrix(rnorm(120), , 2), matrix(rnorm(120,
+ mean = 3), , 2))#观察值的指标向量数据
+ y <- matrix(c(rep(1, 60), rep(-1, 60)))#各观察值所属类别
+ svp <- ksvm(x, y, type = "C-svc")  #建立支持向量机模型。
+predict(svp,x)  #对训练数据进行分类
+table(predict(svp,x),y)   #准确度
+ plot(svp, data = x)  #画出模型图
+
+
+#案例三：
+data(promotergene)
+tindex <- sample(1:dim(promotergene)[1], 5)#随机抽取5个作为检验数据。
+genetrain <- promotergene[-tindex, ]# 设置训练数据。
+genetest <- promotergene[tindex, ] #设置检验数据
+gene <- ksvm(Class ~ ., data = genetrain, kernel = "rbfdot",
+ kpar = "automatic", C = 60, cross = 3, prob.model = TRUE)  #建立支持向量机模型
+pred<-predict(gene, genetest)  #进行检验
+predict(gene, genetest, type = "probabilities")  #输出概率
+table(pred,genetest[,1]) #精度
+
+#案例四：
+## simple example using the spam data set
+data(spam)
+
+## create test and training set
+index <- sample(1:dim(spam)[1])
+spamtrain <- spam[index[1:floor(dim(spam)[1]/2)], ]
+spamtest <- spam[index[((ceiling(dim(spam)[1]/2)) + 1):dim(spam)[1]], ]
+
+## train a support vector machine
+filter <- ksvm(type~.,data=spamtrain,kernel="rbfdot",
+               kpar=list(sigma=0.05),C=5,cross=3)
+filter
+
+## predict mail type on the test set
+mailtype <- predict(filter,spamtest[,-58]) #预测邮件类别
+
+## Check results
+(ConfuseMatrix<-table(mailtype,spamtest[,58])) #构造混淆矩阵
+prop.table(ConfuseMatrix,2) #按列计算比例，对角线上值为各类的预测精度
+
+
+#案例五：ksvm有个好处，它能输出属于该类的概率
+## Another example with the famous iris data
+data(iris)
+
+## Create a kernel function using the build in rbfdot function
+rbf <- rbfdot(sigma=0.1)
+rbf
+
+## train a bound constraint support vector machine
+irismodel <- ksvm(Species~.,data=iris,type="C-bsvc",
+                  kernel=rbf,C=10,prob.model=TRUE)
+
+irismodel
+
+## get fitted values
+pred<-fitted(irismodel) #对原数据进行分类
+
+## Test on the training set with probabilities as output
+predict(irismodel, iris[141:150,-5], type="probabilities") #概率最大的就属于该类，下面的都属于virginica
+###############################显示输出结果############################
+        setosa  versicolor virginica
+ [1,] 0.006929405 0.001346276 0.9917243
+ [2,] 0.008802158 0.012372464 0.9788254
+ [3,] 0.005985764 0.011615659 0.9823986
+ [4,] 0.007362691 0.001861995 0.9907753
+ [5,] 0.009113026 0.002245750 0.9886412
+ [6,] 0.007163432 0.004425991 0.9884106
+ [7,] 0.007011948 0.021797171 0.9711909
+ [8,] 0.007735658 0.025066650 0.9671977
+ [9,] 0.013865244 0.017375367 0.9687594
+[10,] 0.009677265 0.100129464 0.8901933
+
+(ConfuseMatrix<-table(pred,iris$Species)) #构造混淆矩阵
+prop.table(ConfuseMatrix,2) #按列计算比例，对角线上值为各类的预测精度
+###############################显示输出结果############################
+pred         setosa versicolor virginica
+  setosa         50          0         0
+  versicolor      0         47         0
+  virginica       0          3        50
+
+

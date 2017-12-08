@@ -1,0 +1,9 @@
+#对应分析案例1
+x.df=data.frame(HighlyFor=c(2, 6, 41, 72, 24),
+For =c(17, 65, 220, 224, 61),
+Against=c(17, 79, 327, 503, 300),
+HighlyAgainst=c(5, 6, 48, 47, 41))
+rownames(x.df)<-c("BelowPrimary", "Primary",
+"Secondary", "HighSchool","College")
+library(MASS)
+biplot(corresp(x.df, nf=2))#进行对应分析并画出二维图。

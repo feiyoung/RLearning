@@ -1,0 +1,252 @@
+
+
+
+
+
+
+
+
+
+
+<html>
+<head>
+<title>正文显示页面</title>
+<link href="style.css" rel="stylesheet" type="text/css">
+<script language='JavaScript' src='JavaScript/RDZLZX_util.js'></script>
+<script language="JavaScript" type="text/JavaScript" src="JavaScript/CGRS_Document_Class.js"></script>
+<script language="JavaScript" type="text/JavaScript">
+<!--
+new CGRS_Document_Class("my_CGRS_document");       // 对CGRS文档进行再处理的对象
+my_CGRS_document.isPopup          = true;          // 点击后是否弹出窗口
+my_CGRS_document.borderWidth      = 1;             // 用于改变浮动框尺寸的边线宽度
+my_CGRS_document.framesIsTogether = false;         // 浮动框是否集中放置
+my_CGRS_document.set_immediatelyDisplay("");       // 设置需要立即显示的附件名后缀（不包括“.”号）。以“/”分隔。
+my_CGRS_document.relate_style             = "color:#cc0000";                 // 关联词链接点的显示样式
+my_CGRS_document.attach_style             = "";                              // 附件链接点的显示样式
+my_CGRS_document.inLine_style             = "";                              // 内联链接点的显示样式
+
+RDZLZX_util("my_common");
+
+function myInit() {
+      my_CGRS_document.init();
+relateDocumentForm1.submit();
+relateDocumentForm2.submit();
+
+}
+
+function get_relateComments() {   // 获取相关评论
+      document.commentForm.action = "get_relateComments.jsp";
+      document.commentForm.submit();
+}
+
+function set_relateComments(comments) {   // 显示相关评论
+      var tbl = document.getElementById("relateComments_table");
+      for (var i=tbl.rows.length-1; i>=0; i--) {tbl.deleteRow(i);}
+      if (comments.length>0) {
+            for (var i=0; i<comments.length; i++) {
+                  tbl.insertRow(i);
+                  tbl.rows[i].insertCell(0);
+                  var txt = comments[i].content;
+                  txt = (txt==""?"无内容":(my_common.getByteLength(txt)>54?my_common.truncationByByteLength(txt, 50)+"....":txt));
+                  tbl.rows[i].cells[0].innerHTML = "<a target='_blank' href='browse_comment.jsp?id="+comments[i].id+"'>"+txt+"</a>"
+                                                 + "（" + comments[i].writer + " " + comments[i].date + "）";
+            }
+      }
+      else {tbl.insertRow(0);
+            tbl.rows[0].insertCell(0);
+            tbl.rows[0].cells[0].innerHTML = "<font color='#dd0000'>无相关评论</font>";
+      }
+      document.commentForm.commentText.value = "";
+}
+
+function submit_comment() {
+      if (document.commentForm.commentText.value=="") {
+            alert("请填写评论内容");
+            document.commentForm.commentText.focus();
+            return;
+      }
+      document.commentForm.action = "submit_comment.jsp";
+      document.commentForm.submit();
+      alert("您的评论已经递交");
+}
+
+function set_relateDocuments(tblName, cgrs_qno, docs) {   // 显示相关文档
+      var tbl = document.all[tblName];
+      for (var i=tbl.rows.length-1; i>=0; i--) {tbl.deleteRow(i);}
+      if (cgrs_qno>0 && docs.length>0) {
+            for (var i=0; i<docs.length; i++) {
+                  tbl.insertRow(i);
+                  tbl.rows[i].insertCell(0);
+                  var txt = docs[i].title;
+
+                  txt = (txt==""?"缺标题":txt);   //(my_common.getByteLength(txt)>54?my_common.truncationByByteLength(txt, 50)+"....":txt));
+                  tbl.rows[i].cells[0].style.height = 24;
+                  tbl.rows[i].cells[0].innerHTML = "<img src='images/icons.gif' width='10' height='10' border='0' /> "
+                                  + "<a href='javascript:browse_relateDocument("+cgrs_qno+", "+docs[i].seqNo+")'>" + txt + "</a>";
+            }
+      }
+      else {tbl.insertRow(0);
+            tbl.rows[0].insertCell(0);
+            tbl.rows[0].cells[0].innerHTML = "<font color='#dd0000'>无相关文章</font>";
+            var k = tblName.lastIndexOf("_");
+            document.all[tblName.substring(0, k)+"_block"].style.display = "none";
+      }
+}
+
+function browse_relateDocument(cgrs_qno, rno) {     // 浏览一篇相关文献
+      document.browseForm.resourceID.value = "127.0.0.1";
+      document.browseForm.dbid.value = "KG";
+      document.browseForm.cgrsQueryNo.value = cgrs_qno;
+      document.browseForm.recNo.value = rno;
+      document.browseForm.submit();
+}
+
+function print1()  {
+  window.open("print.jsp");
+
+}
+
+function word()  {
+  document.wordForm.word.value = document.getElementById("printdiv").innerHTML;
+  var wname = "";
+  if(window.event)
+	wname = document.getElementById("bigtitle").innerText;
+  else
+	wname = document.getElementById("bigtitle").innerHTML;
+  document.wordForm.wordName.value = wname;
+  document.wordForm.submit();
+}
+
+function pdf(src)  {
+  window.open("downloadpdf.jsp?pdf=" + src);
+}
+
+
+function showRelate(cmd,fldid)  {
+
+document.wordQueryForm.cmd.value = "(" + fldid + "=_" + cmd + ")";
+	
+document.wordQueryForm.submit();
+}
+//-->
+</script>
+</head>
+
+<body style="background:url(images/bg.gif); height:100%;" leftmargin="0" topmargin="0" rightmargin="0" bottommargin="0" onload="myInit()"><!-- oncontextmenu="window.event.returnValue=false"-->
+
+<div id="banner">
+  <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=7,0,19,0" width="900" height="90">
+    <param name="movie" value="images/banner.swf" />
+    <param name="quality" value="high" />
+    <embed src="images/banner.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash" width="900" height="90"></embed>
+  </object>
+</div>
+
+<form name="wordForm" method="post" action="word.jsp">
+<input type="hidden" name="word" value=""/>
+<input type="hidden" name="wordName" value=""/>
+</form>
+
+
+<form action="queryFirst.jsp" onsubmit="return false;" target="mainWindow" name="wordQueryForm">
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type="hidden"  size="60" name="cmd" value=""/>
+					<input  type="hidden" name="dbids" value="KZ/KF/KX/KJ/KW/KG/KL/KB/KQ"/>
+
+					</form>
+<div id="textmain">
+
+<div><img alt="" src="images/topline.JPG" height="4" width="100%" /></div>
+
+<div id="textDb"><p ><strong>【
+经济学与经济管理类刊
+】</strong></p></div>
+<div id="textDb"><p align=right style="cursor:hand;"><FONT onclick="print1();" ><strong>【打印
+】</strong></FONT>
+<FONT onclick="word();" align=right style="cursor:hand;"><strong>【保存】</strong></FONT>
+
+</p></div>
+<div id=printdiv>
+<div id='bigtitle'><strong>基于<font color='#ff0000'>典型相关分析</font>的流通产业与国民经济关联性研究</strong></div>
+<div id='textzz'><a href="#" class="doc" onclick="showRelate('曹静','HH')">曹静</a><br><br></div>
+<div id='text'>
+<strong>【专题名称】<a href="#" class="doc"  onclick="showRelate('贸易经济','ZZ')">贸易经济</a></strong><br>
+<strong>【专 题  号】F51</strong><br>
+<strong>【复印期号】2010年08期</strong><br>
+<strong>【原文出处】《<a href="#" class="doc" onclick="showRelate('商业经济与管理','AA')">商业经济与管理</a>》(杭州)2010年5期第13～17页</strong><br>
+<strong>【英文标题】A Study on the Interrelation between Circulation Industry and National Economy Based <br>&nbsp;&nbsp;on Typical Correlation Analysis</strong><br>
+<strong>【作者简介】曹静(1974-)，女，山西天镇人，上海商学院管理学院副教授，博士，主要从事流通经济学研究。上海商学院管理学院，上海　201100</strong><br>
+<table cellpadding=0 cellspacing=0 width='100%' border=0><tr><td valign='top' nowrap><strong><font style='color:#333333;font-size:14px;line-height:22px;'>【内容提要】</font></strong></td><td><strong><font style='color:#333333;font-size:14px;line-height:22px;'>流通产业是国民经济的重要组成部分。文章运用<font color='#ff0000'>典型相关分析</font>，对流通产业和国民经济其他产业的关联关系进行了实证研究。发现流通产业和国民经济其他产业之间存在密切的综合性的关联关系，其中以流通产业中的批发零售业的关联作用最强，而流通产业和第一产业的关联作用最弱。同时，流通产业对国民经济其他产业存在较强的拉动作用，流通产业GDP每增加1单位，可以使国民经济其他产业GDP增加0.1363单位。这些结论为发展流通产业提供了决策依据。<br>Circulation industry has already become an important part of national economy of China. By applying the method of canonical correlation analysis, this paper empirically studies the interrelations between circulation industry and the others of national economy of China. It is found that circulation industry has strong pulling effects on other industries of national economy, and an increase in GDP of circulation industry by 1% leads to an increase in GDP of national economy by 0.1363%. Moreover, the contribution of wholesale and retail industries is the highest. There is a least interrelation between primary industry and circulation industry. The result provides the decision-making basis for developing circulation industry.</font></strong></td></tr></table>
+<strong>【关 键 词】<a href="#" style="doc" onclick="showRelate('典型相关分析','SS')">典型相关分析</a>/<a href="#" style="doc" onclick="showRelate('流通产业','SS')">流通产业</a>/<a href="#" style="doc" onclick="showRelate('产业关联canonical correlation analysis','SS')">产业关联canonical correlation analysis</a>/<a href="#" style="doc" onclick="showRelate('circulation industry','SS')">circulation industry</a>/<a href="#" style="doc" onclick="showRelate('industrial interrelationsEE12UU1679269','SS')">industrial interrelationsEE12UU1679269</a></strong><br>
+<p class="textzw"><br>&nbsp;&nbsp;&nbsp;&nbsp;中图分类号：F710　文献标识码：A　文章编号：1000-2154(2010)05-0013-05<br>&nbsp;&nbsp;&nbsp;&nbsp;一、引言<br>&nbsp;&nbsp;&nbsp;&nbsp;流通产业作为社会生产与社会消费的中介，关系着国民经济所有部门和行业经济的运行，在提高国民经济运行效率和效益等方面发挥着越来越重要的作用。近年来，我国学者对流通产业与国民经济的关系进行了许多实证研究，其中大部分研究集中在运用计量经济方法来研究流通产业对经济发展的促进作用[1]。赵凯、宋则(2009)[2]根据菲德模型的分析框架，发现商贸流通服务业对经济增长的直接影响力低于其对经济增长的间接影响力。李宏(2007)[3]运用协整理论对我国工业化与流通产业发展之间的动态关系进行了实证分析，发现改革开放前后二者之间的动态关系发生了结构上的变化，工业化与流通产业发展在改革开放时期存在因果关系，且只存在流通产业发展对工业化进程的单方面推动作用，而工业化进程并没有成为拉动流通产业发展的动因。也有一些学者从产业关联的角度来研究流通产业对国民经济发展的贡献，认为一个产业与其他产业的经济技术联系越广泛，越紧密，其对国民经济其他产业的制约和影响程度就越大。经济学家罗斯托和赫希曼都将产业关联作为主导产业选择的基准之一。因此，产业关联作用是衡量产业对社会经济影响力的基本标志之一。然而，流通产业贡献和流通产业关联能力贡献对经济发展的作用方式是不一样的。冉净斐、文启湘(2005)[4]提出，流通产业之所以对国家竞争力有重大影响，在于该产业具有很强的产业关联度，并且对我国流通业推动经济增长的作用和外溢效应贡献进行了经济计量测算，证实了流通与经济增长具有正的相关关系。袁建文(2009)[5]运用投入产出方法对广东省流通产业和其他产业的关联程度作了测算，指出流通产业对经济发展不仅有直接影响，还有间接影响，主要表现为流通产业与其他产业之间存在较强的关联性，而且这种关联性有增强的趋势。赵德海、邵万清(2004)[6]则利用流通产业与其他产业的相关系数分析，得出流通产业能极大地推动其他产业发展的结论。方丽玲(2008)[7]基于产业关联视角分析了辽宁省的产业结构存在的问题，提出提高产业关联度、促进产业结构调整升级和区域资源整合的建议。<br>&nbsp;&nbsp;&nbsp;&nbsp;从现有的研究文献来看，对产业关联的研究，主要采用投入产出模型和相关系数分析。投入产出模型需要满足两个重要假设：一是同质性，即假定一个产业只生产一种同质的产品，产业间以各种投入品和产出品为技术经济联系的纽带；二是比例性，即假设了技术的稳定性，各产业部门的投入和产出之间形成线性函数关系。在现实经济运行中，经济、技术发展的动态性和企业生产的多样性使完全满足以上两个假设的可能性很小。相关系数分析一般仅能反映两个变量之间的相关程度。因此，用投入产出模型和相关系数来反映产业之间的关联关系存在一定的局限性。事实上，流通产业对于经济发展的贡献是流通产业内部多个产业变量共同作用于国民经济各部门的综合反映，仅考虑两个单一变量之间的关系难免过于偏颇。本文所用的<font color='#ff0000'>典型相关分析</font>方法将国民经济分为流通产业变量组和其他产业变量组[8]，通过对两组变量之间内在联系的实证分析，既能从整体上也能从局部上反映流通产业与其他产业之间的关联关系，从而克服了投入产出模型和相关系数分析的局限性，比较全面地综合性地揭示了流通产业特别是批发零售业通过产业关联产生的对国民经济发展的拉动作用。<br>&nbsp;&nbsp;&nbsp;&nbsp;二、研究方法与研究变量的选择<br>&nbsp;&nbsp;&nbsp;&nbsp;（一）研究方法<br>&nbsp;&nbsp;&nbsp;&nbsp;在统计分析中，一般用简单相关系数反映两个变量之间的线性相关关系，用复相关系数反映一个变量与多个变量之间的线性相关关系。<font color='#ff0000'>典型相关分析</font>是1936年由Hotelling在将线性相关性推广到两组变量相关性的讨论中提出的，并在其后不断得到发展与完善，近年来在社会经济科技领域得到广泛应用。它借助主成分分析降维的思想，把多变量与多变量之间的相关关系转化为两个变量之间的相关，所揭示的是两组多元随机变量之间的关系。其具体做法是：在第一组变量中提出一个典型变量，在第二组变量中也提出一个典型变量，并使这一对典型变量具有最大的相关性；然后又在每一组变量中提出第二个典型变量，使得在与第一个典型变量不相关的典型变量中，这两个典型变量线性组合之间的相关性最大。如此下去，直到两组变量间的相关性被提取完毕为止。因此，<font color='#ff0000'>典型相关分析</font>是把原来两组变量之间的相关，转化为研究从各组中提取的少数几个典型变量之间的典型相关，从而减少研究变量的个数。同时，<font color='#ff0000'>典型相关分析</font>把两组变量的每一组变量作为一个整体考虑，因而它与单个变量间的相关分析相比，更能从全局上把握研究现象的本质联系。在实际应用中，只需保留前面若干对典型变量。保留的原则是视典型相关系数的显著性检验结果以及典型变量的解释能力而定。如果第一对典型变量已经反映足够多的信息，则只保留第一对典型变量比较理想。<br>&nbsp;&nbsp;&nbsp;&nbsp;（二）研究变量<br>&nbsp;&nbsp;&nbsp;&nbsp;流通产业可以有广义和狭义之分。广义的流通产业是指商品所有者一切贸易关系的总和，是商流、物流、信息流和资金流的集合，包括批发、零售、餐饮、物流、信息和金融等诸多产业。狭义的流通产业仅仅指批发、零售、餐饮和物流等产业。本文根据国家统计局2002年7月制定的《国民经济行业分类办法》，采用狭义的流通产业概念。为研究流通产业和国民经济其他产业发展的典型相关关系，本文设定了两组变量。第一组变量为流通产业的GDP产出，包括：<br>&nbsp;&nbsp;&nbsp;&nbsp;<img border=0 alt='F51U823.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/2576b2a47e6c9edae0a2a1cf2030f14a.jpg'><br>&nbsp;&nbsp;&nbsp;&nbsp;三、流通产业与国民经济其他产业发展的<font color='#ff0000'>典型相关分析</font><br>&nbsp;&nbsp;&nbsp;&nbsp;（一）典型相关模型<br>&nbsp;&nbsp;&nbsp;&nbsp;为建立合适的典型相关模型，首先对两组变量之间的典型相关系数作显著性检验和典型变量的冗余分析。检验结果和冗余分析结果如表1、表2所示。<br>&nbsp;&nbsp;&nbsp;&nbsp;<img border=0 alt='F51U824.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/9f2fee5cdb97994df0a0c1bdc83e93a8.jpg'><br>&nbsp;&nbsp;&nbsp;&nbsp;<img border=0 alt='F51U825.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/4d65ea5cda787cda9ca6a7065be88.jpg'><br>&nbsp;&nbsp;&nbsp;&nbsp;（二）典型结构分析<br>&nbsp;&nbsp;&nbsp;&nbsp;结构分析是依据原始变量与典型变量之间的相关系数给出的。第一对典型变量组的典型结构分析如表3所示。<br>&nbsp;&nbsp;&nbsp;&nbsp;<img border=0 alt='F51U826.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/2b68474b2014829a72d68fd02e457845.jpg'><br>&nbsp;&nbsp;&nbsp;&nbsp;<img border=0 alt='F51U827.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/f6b8e5321b31b91f237b8eb862ea2ef.jpg'><br>&nbsp;&nbsp;&nbsp;&nbsp;此模型的回归拟合系数为<img border=0 alt='F51U828.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/68a3424b100d7923988b2f7f33442638b.jpg'>=0.6955，调整后的回归拟合系数为<img border=0 alt='F51U828.jpg' src='temp/3F4237F1E8C07C121933C01E8E609E76/68a3424b100d7923988b2f7f33442638b.jpg'>=0.4659，F检验值为F=66.2431，括弧内的数字为t检验值。用典型变量建立的回归模型告诉我们，国民经济其他产业GDP的变动有46.59%可以由流通产业GDP的变动来解释，而流通产业GDP每增加1单位，可以使国民经济其他产业GDP增加0.1363单位。<br>&nbsp;&nbsp;&nbsp;&nbsp;四、结论与讨论<br>&nbsp;&nbsp;&nbsp;&nbsp;第一，流通产业对国民经济其他产业的发展有着较为显著的拉动作用。由于回归模型是基于典型变量而建立的，因而这种拉动作用是一种关联效应，反映了流通产业与国民经济其他产业之间存在密切的关联关系。但这种产业关联不同于传统的生产商对于流通商的依赖关系。流通产业作为产业链中的重要一环，既是要素供给者，又是市场的需求方。作为供给方，它通过向其他产业提供要素投入来确定自己在产业链中的地位；而作为需求方，它通过对其他产业产出的消费来显示其在产业链中的作用。事实上，流通产业作为各产业联系的纽带和桥梁，本质上决定了它与国民经济其他产业之间的密切关联关系。一方面，流通产业通过经营网络的点、线、面和商流、物流、资金流、信息流的融合，实现了生产和消费的对接，发挥其直接影响力的作用。另一方面，流通产业起着促进其他产业部门增长的产业职能，完成着商品买卖职能派生出的其他职能，如售前售后服务、广告业务、商业预测和其他社会服务等等。流通已从交换中介人演变成“综合服务”系统。工业、建筑业对流通产业变量组的交叉负荷分别达0.981、0.918，而其他第三产业（金融业、房地产业与其他服务业）对流通产业变量组的交叉负荷也很大（分别为0.854、0.938、0.935），这种密切的关联是一种双向的因果关系，在客观上要求产业之间的协同发展。流通产业为了获得更大的规模经济和范围经济效益，不断将其价值链向上游和下游延伸，这种延伸使流通产业与其他产业相互渗透、相互交叉，从而使产业间界限日益模糊，乃至最终融为一体，这就是流通产业融合。产业融合作为当今产业形态演进的主流模式，价值和利益正越来越多地来源于各个产业之间的边界处和结合部。流通产业的发展程度可以反映出流通产业与其他产业之间相互渗透、相互融合的程度。产业之间的关联度越高，流通产业与其他产业之间的渗透性与融合性越强，对生产和消费的影响也越深。因此，流通产业正是以适应多样化的消费为前提，通过从经营战略上全面引导、参与生产，促进经济增长方式的转变，提高社会资源的配置效率，节约社会成本，优化行业和地区产业结构，从而间接推动宏观经济的发展。<br>&nbsp;&nbsp;&nbsp;&nbsp;第二，与其他流通产业相比，批发零售业在产业关联中处于核心地位。批发零售业变量在流通产业变量组（自身变量组）中的载荷系数最大(0.985)，对国民经济其他产业变量组的交叉载荷系数也最大(0.980)，反映出批发零售业在产业关联中的特殊作用。随着全球科学技术的日益发达，几乎任何一个行业的生产能力都处于极度扩张之中，许多产品都出现了供过于求的状况，对于生产企业和其他第三产业企业来说，最重要的莫过于产品与服务的销售，而这往往要借助于批发零售业来实现。在产业协同过程中，生产企业和其他第三产业企业对于批发零售业企业的依赖程度越来越大。另一方面，批发零售商必须同它的供应商和销售对象保持密切的协同关系，才能在库存成本最低的情况下保证商品销售的持续性和稳定性。批发零售企业通过与信息技术公司的协同合作来开发并不断提升企业的后台管理和前台管理水平；通过与生产商的协同合作来开发品类管理技术，提升商品陈列、销售和管理的水平；通过与专业咨询公司合作来预测市场发展趋势，提升商品采购的水平；通过引入管理信息系统提升内部管理水平等等。同时，随着经济市场化的深入，产业运营机制的变革，企业自主经营权扩大，批发零售业的经营环境和活动方式发生了根本变化，消费者的需求也日趋个性化、多样化和动态化。这些变化使批发零售业的作用超出了通常所说的“桥梁”或“纽带”作用，而是能动地将经过系统分析和归纳的市场信息及时反馈生产甚至涉足于生产厂商的规划与运作的控制，使产品不仅在生产总量上，而且在质量、品种、规格、花色等结构上都必须适应社会需求和国家产业政策。由此可见，由于批发零售业与其他产业特有的市场关联、生产关联和技术关联，使它在国民经济产业关联、协同乃至产业融合的进程中处于核心的地位。<br>&nbsp;&nbsp;&nbsp;&nbsp;第三，流通产业对第一产业的拉动作用不足。与第二产业（工业、建筑业）相比，第一产业（农林牧渔业）变量对流通产业变量组的交叉载荷系数最小(0.675)，反映出流通产业和第一产业的关联程度最低。其原因集中体现在农业产业化水平低，农产品流通中介组织滞后，农产品的市场组织化程度和流通产业的发展程度较低，工农业和城乡经济缺乏内在的市场化纽带，有形和无形的城乡阻隔使得互为市场的关系遇到严重障碍，极度分散的小规模农户与大市场的矛盾日益突出。目前我国城市中已有超市等很多现代流通业态，它们成为城市居民所需生鲜农产品的主要销售终端，但是小规模的农户生产没有能力承担起实现现代商品流通的重任，农产品经过传统流通渠道到达消费者手中，中间的流通环节多，交易成本高。特别是由于自然风险、市场风险和加工、储运、保鲜等方面的原因，农产品的供求关系显得更加脆弱，农村卖粮难、卖棉难、卖猪难、卖菜难等问题依然不同程度的存在，农产品积压已成为“三农”（农业、农村和农民）面临的主要问题[9]。另一方面，农村商品流通体系建设的投入不足，发展速度迟缓，落后的农村商品流通体系不可能满足农民现代生产生活的商品和劳务需求。工业品无法顺利达到农村，农村不断涌现出来的初级产品也得不到城市和工业的及时充分吸收，以至城乡交换关系紊乱，产品双重滞销。因此，必须加快建设农村现代化流通体系，通过流通业所提供的服务逐渐向农业内化，培育和建立适合农民消费水平和需求层次的零售业态，强化信息技术的利用，打破城乡阻隔，形成城市与农村一体化的流通网络，加速农业的产业化进程，从而提高农业的综合竞争力。这对于解决“三农”问题，建设社会主义新农村具有重要意义。<br>&nbsp;&nbsp;&nbsp;&nbsp;收稿日期：2009-12-10<br/>
+<img src='images/bottomline.JPG' width='100%' height=4/>
+<table width=30% cellpadding=0 border=0 align=right cellspacing=0 ><tr><td width=100% align='right' styel="color:#666666;font-size:13px;"><b><font color=#666666>
+</font></b></td></tr></table>
+<br><br></p>
+<table width='95%' align='center' cellpadding='5' cellspacing='0' style='border-top:1px solid #333333;border-bottom:1px solid #333333'>
+<tr><td>
+<table width='100%' border='0' cellspacing='0' cellpadding='0'>
+<tr>
+<td width='100' align='center' valign='top'><span style='color:#333333'>【参考文献】</span></td>
+<td><br>&nbsp;&nbsp;&nbsp;&nbsp;[1]赵萍.中国流通服务业影响力实证研究[J].商业经济与管理，2007(8):15-19.<br>&nbsp;&nbsp;&nbsp;&nbsp;[2]赵凯，宋则.商贸流通服务业影响力及作用机理研究[J].财贸经济，2009(1):102-108.<br>&nbsp;&nbsp;&nbsp;&nbsp;[3]李宏.工业化与流通产业发展关系的实证分析[J].统计与决策，2007(22):97-99.<br>&nbsp;&nbsp;&nbsp;&nbsp;[4]冉净斐，文启湘.流通战略产业论[J].商业经济与管理，2005(6):10-19.<br>&nbsp;&nbsp;&nbsp;&nbsp;[5]袁建文.基于投入产出和计量经济方法的广东省流通产业分析[J].广东商学院学报，2009(2):73-78.<br>&nbsp;&nbsp;&nbsp;&nbsp;[6]赵德海，邵万清.对流通地位的再认识[J].哈尔滨商业大学学报：社会科学版，2004(1):23-29.<br>&nbsp;&nbsp;&nbsp;&nbsp;[7]方丽玲.基于产业关联视角的辽宁省产业结构分析[J].大连海事大学学报：社会科学版，2008(6):47-50.<br>&nbsp;&nbsp;&nbsp;&nbsp;[8]朱建平.应用多元统计分析[M].北京：科学出版社，2006:149-170.<br>&nbsp;&nbsp;&nbsp;&nbsp;[9]宋则.流通体制改革攻坚[M].北京：中国水利水电出版社，2005:84-88.^NU1DA20101021</td>
+</tr>
+</table>
+</td></tr>
+</table>
+</div>
+</div>
+<br />
+<table id='relateDocuments1_block' width='95%' align='center' cellpadding='0' cellspacing='0'>
+<tr><td height='30' style='font-size:13px;font-weight:bold;color:#333333;border-bottom:1px solid #333333'>相关文章</td></tr>
+<tr><td>
+<table id='relateDocuments1_table'>
+<tr><td style='text-align:center; color:#dd0000'>正在载入相关文章......</td></tr>
+</table>
+</td></tr>
+<tr><td><iframe name='relateDocumentWindow1' frameborder='0' marginHeight='0' scrolling='no' src='' height='0' width='0'></iframe></td></tr>
+<form name='relateDocumentForm1' method='POST' target='relateDocumentWindow1' action='get_relateDocuments.jsp'>
+<input name='resourceID' type='hidden' value="127.0.0.1" />
+<input name='dbid' type='hidden' value="KG" />
+<input name='number' type='hidden' value='5' />
+<input name='tableName' type='hidden' value='relateDocuments1_table' />
+<textarea name='command' style='display:none'>(GG=_F51?)+(@A=_典型相关分析)+(@A=_流通产业)+(@A=_产业关联canonical correlation analysis)+(@A=_circulation industry)+(@A=_industrial interrelationsEE12UU1679269)</textarea>
+</form>
+</table>
+<br />
+<table id='relateDocuments2_block' width='95%' align='center' cellpadding='0' cellspacing='0'>
+<tr><td height='30' style='font-size:13px;font-weight:bold;color:#333333;border-bottom:1px solid #333333'>引用本文的文章</td></tr>
+<tr><td>
+<table id='relateDocuments2_table'>
+<tr><td style='text-align:center; color:#dd0000'>正在载入引用本文的文章......</td></tr>
+</table>
+</td></tr>
+<tr><td><iframe name='relateDocumentWindow2' frameborder='0' marginHeight='0' scrolling='no' src='' height='0' width='0'></iframe></td></tr>
+<form name='relateDocumentForm2' method='POST' target='relateDocumentWindow2' action='get_relateDocuments.jsp'>
+<input name='resourceID' type='hidden' value="127.0.0.1" />
+<input name='dbid' type='hidden' value="KG" />
+<input name='number' type='hidden' value='5' />
+<input name='tableName' type='hidden' value='relateDocuments2_table' />
+<textarea name='command' style='display:none'>(CK=_"基于典型相关分析的流通产业与国民经济关联性研究")</textarea>
+</form>
+</table>
+
+</div>
+<table style="display:none">
+  <tr><td align="center"><b>显示指定的文献</b></td></tr>
+  <form method="POST" name="browseForm" target="_blank" action="browse_document.jsp">
+  <tr><td>要显示的服务器：<input type="text" name="resourceID"  value="127.0.0.1"/></td></tr>
+  <tr><td>要显示的库：    <input type="text" name="dbid"        value="KG"/></td></tr>
+  <tr><td>CGRS查询号：    <input type="text" name="cgrsQueryNo" value=""/></td></tr>
+  <tr><td>选中的记录序号：<input type="text" name="recNo"       value=""/></td></tr>
+  <tr><td><input type="submit" value="递交"/></td></tr>
+  </form>
+</table>
+
+<pre id="footer">
+地　址：北京市海淀区中关村大街甲59号    办公室：（010）62514621               服务部：（010）82503442
+邮政编码：100872                        编辑部：（010）62515820               咨询部：（010）84043003
+网　　址：http://www.zlzx.org           市场部：（010）82502720 （兼传真）    网络室：（010）82503018
+</pre>
+
+</body>
+</html>
+

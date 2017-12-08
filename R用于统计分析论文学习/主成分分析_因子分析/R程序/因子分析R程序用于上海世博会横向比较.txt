@@ -1,0 +1,68 @@
+########################因子分析用于综合评价############################
+rm(list=ls(all=T))
+zhibiao<-as.matrix(data.frame(bilishi=c(42 , 41454412  ,186 , 200), 
+Canada=c(62  ,50306648 , 185  ,400) ,
+Japan.daban=c(81 , 64218770,  183 , 330 ),
+Spain=c(114  ,41814571  ,176  ,215), 
+German=c(177  ,18100000 , 153  ,160 ),
+Japan.aizhi=c(125 , 22049544 ,185 , 173 ),
+Chian.shanghai=c(249 , 70000000 , 184 , 528)) )
+zhibiao<-t(zhibiao)
+colnames(zhibiao)<-paste('V',1:4,sep='')
+##利用极差正规化对原数据进行无量纲化处理
+zhibiao1<-apply(zhibiao,2,function(x) (x-min(x))/(max(x)-min(x)))
+library(psych)
+##平行分析确定主成分个数 
+fa.parallel(zhibiao1,fa="pc",n.iter=100,main="Screen plot with parallel analysis") 
+pc<-principal(zhibiao1,nfactor=2,scores=T);pc 
+##计算方差贡献率确定权重
+eig.value<-pc$values
+tol.value<-sum(eig.value)
+score<-eig.value[1]/tol.value*pc$scores[,1]+eig.value[2]/tol.value*pc$scores[,2]
+##输出各样本综合排名
+zh.pm1<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(zhibiao)[1],"名",sep=""),defen=sort(score,decreasing=T))
+
+##用标准化方法进行无量纲化处理
+zhibiao2<-scale(zhibiao) 
+fa.parallel(zhibiao2,fa="pc",n.iter=100,main="Screen plot with parallel analysis") 
+pc<-principal(zhibiao2,nfactor=2,score=T);pc
+eig.value<-pc$values
+tol.value<-sum(eig.value)
+score<-eig.value[1]/tol.value*pc$scores[,1]+eig.value[2]/tol.value*pc$scores[,2]
+##输出各样本综合排名
+zh.pm2<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(zhibiao)[1],"名",sep=""),defen=sort(score,decreasing=T))
+
+##用均值化方法进行无量纲化处理
+zhibiao3<-apply(zhibiao,2,function(x) x/mean(x)) 
+fa.parallel(zhibiao3,fa="pc",n.iter=100,main="Screen plot with parallel analysis") 
+pc<-principal(zhibiao3,nfactor=2,score=T);pc 
+eig.value<-pc$values
+tol.value<-sum(eig.value)
+score<-eig.value[1]/tol.value*pc$scores[,1]+eig.value[2]/tol.value*pc$scores[,2]
+##输出各样本综合排名
+zh.pm3<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(zhibiao)[1],"名",sep=""),defen=sort(score,decreasing=T))
+
+result<-list()
+result$'极差正规化'<-zh.pm1
+result$'标准化方法'<-zh.pm2
+result$'均值化方法'<-zh.pm3;
+##输出三种方法的结果，发现这三种方法的结果一样，三种无量纲化处理方法相差不大
+result
+
+##下面用循环来做上面的事
+fangfa<-c('极差正规化','标准化方法','均值化方法')
+fa1<-function(x) (x-min(x))/(max(x)-min(x))
+fa2<-function(x) (x-mean(x))/sd(x)
+fa3<-function(x) x/mean(x)
+f<-c(fa1,fa2,fa3) #用于盛放函数的向量f为一个列表
+result<-list()
+for(i in 1:3){
+Zhibiao<-apply(zhibiao,2,f[[i]]) #无量纲化
+fa.parallel(Zhibiao,fa="pc",n.iter=100,main="Screen plot with parallel analysis") 
+pc<-principal(Zhibiao,nfactor=2,score=T);
+eig.value<-pc$values
+tol.value<-sum(eig.value)
+score<-eig.value[1]/tol.value*pc$scores[,1]+eig.value[2]/tol.value*pc$scores[,2]
+zh.pm<-data.frame(sample=paste('样本',order(score,decreasing=T),sep=''),paiming=paste("第",1:dim(zhibiao)[1],"名",sep=""),defen=sort(score,decreasing=T))
+result$fangfa[[i]]<-zh.pm 
+}

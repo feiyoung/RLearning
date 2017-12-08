@@ -1,0 +1,95 @@
+K均值聚类法：
+#案例1
+x<-rbind(matrix(rnorm(100,sd=0.3),ncol=2),matrix(rnorm(100,mean=1,sd=0.3),ncol=2))
+x<-as.data.frame(x)
+rownames(x)<-paste0('样本',1:dim(x)[1]) #将各个样本命个名
+set.seed(1234)#为了使得每次的结果相同，设定随机种子
+cl<-kmeans(x,2,20)#x为聚类数据矩阵，2为聚类数，20为最大重复次数。
+cl
+x$CluR<-cl$cluster #将聚类解保存到x的CluR元素中
+#########################输出结果显示########################
+K-means clustering with 2 clusters of sizes 50, 50#表示聚成的两类观察样本数各为50.
+
+Cluster means:#返回的第一类列指标均值和第二类列指标的均值。
+        [,1]        [,2]
+1 0.99306240  0.95533705
+2 0.01638721 -0.03936638
+
+Clustering vector:#返回各个观察样本的所属类。
+  [1] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+ [37] 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+ [73] 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+
+Within cluster sum of squares by cluster:#返回各类到中心点的距离平方和，此为最小距离平方和。
+[1] 10.380154  9.733049
+ (between_SS / total_SS =  71.6 %)这是类间差异程度和类内的相似性的指标
+
+Available components:
+
+[1] "cluster"      "centers"      "totss"        "withinss"    
+[5] "tot.withinss" "betweenss"    "size"         "iter"        
+[9] "ifault"   
+   
+#可视化
+par(mfrow=c(2,1))
+plot(x$CluR,pch=x$CluR,ylab='类别编号',xlab='样本',main='聚类的类成员',axes=F) #axes=F表示不画坐标轴
+par(las=2)#指定坐标轴文字旋转90度
+axis(1,at=1:100,labels=rownames(x),cex.axis=0.6) #指定横坐标刻度，文字为观察值的名
+axis(2,at=1:2,labels=1:2,cex.axis=0.6)#指定列坐标刻度，文字为聚类编号
+box() #图形外加外框
+legend('topleft',c('第一类','第二类'),pch=1:2,cex=0.6) #添加图注
+plot(cl$centers[1,],type='l',ylim=c(0,1),xlab='聚类变量',ylab='组均值（类中心）',
+     main='各聚类变量均值的变化折线图',axes=F)#绘制第一个类的类中心变量取值的折线图
+axis(1,at=1:2,labels=c('V1','V2'),cex.axis=0.6) #对横坐标添加刻度
+box()
+lines(1:2,cl$centers[2,],lty=2,col=2)#绘制第二个类的类中心变量取值的折线图
+legend('topright',c('第一类','第二类'),lty=1:2,col=1:2) #添加图注
+cl$betweenss/cl$totss*100 #评价类间的差异性和类内的相似性
+
+
+
+plot(x,col=cl$cluster,pch=3,lwd=1)#使用默认类型“点”描出各个点，点的颜色按类别取值，1为黑色，2为红，pch是取第3种绘图符号，lwd是线宽度。
+points(cl$centers,col=1:2,pch=7,lwd=3)#将各类列指标的均值点绘出。
+segments(x[cl$cluster==1,][,1],x[cl$cluster==1,][,2],cl$centers[1,1],cl$centers[1,2])#绘制各类到其对应中心的线段
+segments(x[cl$cluster==2,][,1],x[cl$cluster==2,][,2],cl$centers[2,1],cl$centers[2,2],col=2)
+
+
+#案例二：
+data(iris)
+set.seed(1234)
+cl<-kmeans(as.matrix(iris[,-5]),3,30) #聚成3类，随机选择聚类中心重复30次
+cl
+
+#############################输出结果显示########################
+K-means clustering with 3 clusters of sizes 38, 62, 50
+
+Cluster means:
+  Sepal.Length Sepal.Width Petal.Length Petal.Width
+1     6.850000    3.073684     5.742105    2.071053
+2     5.901613    2.748387     4.393548    1.433871
+3     5.006000    3.428000     1.462000    0.246000
+
+Clustering vector:
+  [1] 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3 3
+ [49] 3 3 2 2 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 1 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2
+ [97] 2 2 2 2 1 2 1 1 1 1 2 1 1 1 1 1 1 2 2 1 1 1 1 2 1 2 1 2 1 1 2 2 1 1 1 1 1 2 1 1 1 1 2 1 1 1 2 1
+[145] 1 1 2 1 1 2
+
+Within cluster sum of squares by cluster:
+[1] 23.87947 39.82097 15.15100
+ (between_SS / total_SS =  88.4 %)
+
+Available components:
+
+[1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss" "betweenss"   
+[7] "size"         "iter"         "ifault"      
+
+(ConfuseMatrix<-table(cl$cluster,iris$Species)) #构造混淆矩阵，验证精度
+#############################输出结果显示########################
+  setosa versicolor virginica
+  1     50          0         0
+  2      0         48        14
+  3      0          2        36
+
+prop.table(ConfuseMatrix,2)*100 #按列计算聚类精度
+plot(as.matrix(iris[,-5]),col=cl$cluster,pch=3,lwd=1) #可视化

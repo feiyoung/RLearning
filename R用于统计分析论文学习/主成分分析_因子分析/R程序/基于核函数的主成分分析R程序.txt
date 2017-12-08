@@ -1,0 +1,83 @@
+#-------------------基于核函数的主成分分析-----------------#
+#-----------------既可以降维、也可以升维--------------#
+#----------------主成分分析
+# another example using the iris
+require(kernlab)
+data(iris)
+test <- sample(1:150,20)
+
+kpc <- kpca(~.,data=iris[-test,-5],kernel="rbfdot",
+            kpar=list(sigma=0.2),features=2)   #将原来的4维降为2维数据
+
+#print the principal component vectors 
+pcv(kpc)
+
+#plot the data projection on the components
+plot(rotated(kpc),col=as.integer(iris[-test,5]),
+     xlab="1st Principal Component",ylab="2nd Principal Component")
+
+#embed remaining points 
+emb <- predict(kpc,iris[test,-5])
+points(emb,col=as.integer(iris[test,5]))
+#---------------Kmeans聚类
+kpc2 <- kpca(~.,data=iris[,-5],kernel="rbfdot",
+            kpar=list(sigma=0.2),features=2)   #将原来所有的4维数据降为2维数据
+iris.pca <- rotated(kpc2) #获得所有主成分得分
+iris.kmeans <- kmeans(iris.pca, centers=3, iter.max=20, nstart=10) #聚类
+iris.kmeans
+#-------输出结果，聚类结果非常好，类间差异度达到between_SS / total_SS =  90.3 %
+K-means clustering with 3 clusters of sizes 60, 40, 50
+
+Cluster means:
+  [,1]  [,2]
+1  4.4  3.96
+2  5.4 -5.29
+3 -9.6 -0.52
+
+Clustering vector:
+  1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20  21 
+  3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3 
+ 22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38  39  40  41  42 
+  3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3   3 
+ 43  44  45  46  47  48  49  50  51  52  53  54  55  56  57  58  59  60  61  62  63 
+  3   3   3   3   3   3   3   3   2   1   2   1   1   1   1   1   1   1   1   1   1 
+ 64  65  66  67  68  69  70  71  72  73  74  75  76  77  78  79  80  81  82  83  84 
+  1   1   1   1   1   1   1   1   1   1   1   1   1   1   2   1   1   1   1   1   1 
+ 85  86  87  88  89  90  91  92  93  94  95  96  97  98  99 100 101 102 103 104 105 
+  1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   1   2   1   2   2   2 
+106 107 108 109 110 111 112 113 114 115 116 117 118 119 120 121 122 123 124 125 126 
+  2   1   2   2   2   2   2   2   1   2   2   2   2   2   1   2   1   2   1   2   2 
+127 128 129 130 131 132 133 134 135 136 137 138 139 140 141 142 143 144 145 146 147 
+  1   1   2   2   2   2   2   1   2   2   2   2   1   2   2   2   1   2   2   2   1 
+148 149 150 
+  2   2   1 
+
+Within cluster sum of squares by cluster:
+[1] 662 283  21
+ (between_SS / total_SS =  90.3 %)
+
+Available components:
+
+[1] "cluster"      "centers"      "totss"        "withinss"     "tot.withinss"
+[6] "betweenss"    "size"         "iter"         "ifault"   
+
+#------------------------------案例二：将维数升高，投影到更高维空间
+require(kernlab)
+test2<-data.frame(
+  X1=c(148, 139, 160, 149, 159, 142, 153, 150, 151, 139,
+           140, 161, 158, 140, 137, 152, 149, 145, 160, 156,
+           151, 147, 157, 147, 157, 151, 144, 141, 139, 148),
+  X2=c(41, 34, 49, 36, 45, 31, 43, 43, 42, 31,
+           29, 47, 49, 33, 31, 35, 47, 35, 47, 44,
+           42, 38, 39, 30, 48, 36, 36, 30, 32, 38),
+  X3=c(72, 71, 77, 67, 80, 66, 76, 77, 77, 68,
+          64, 78, 78, 67, 66, 73, 82, 70, 74, 78,
+          73, 73, 68, 65, 80, 74, 68, 67, 68, 70),
+  X4=c(78, 76, 86, 79, 86, 76, 83, 79, 80, 74,
+           74, 84, 83, 77, 73, 79, 79, 77, 87, 85,
+           82, 78, 80, 75, 88, 80, 76, 76, 73, 78)
+  )#载入数据。
+kpc <- kpca(~.,data=test2,kernel="rbfdot",
+            kpar=list(sigma=0.2),features=5)    #将原来的4维数据升高为5维
+pcv(kpc)  #输出主成分向量
+eig(kpc)
